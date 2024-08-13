@@ -1,0 +1,55 @@
+OUTGROUP:
+  - Enable: true
+    Index: 0
+    Mode: TCPIP
+    IP: 127.0.0.1
+    PORT: 13001
+    TIMEOUT: 1000
+    TIMEADDRESS: 15872
+    RESEATADDRESS: 16182
+    #DBADDRESS: 11100
+    TYPE: ABC
+    TOPIC: "sn,ocr_content,cell_num,Result,error_code,error_msg"
+  - Enable: true
+    Index: 1
+    Mode: TCPIP
+    IP: 127.0.0.1
+    PORT: 13002
+    TIMEOUT: 1000
+    TIMEADDRESS: 15872
+    RESEATADDRESS: 16182
+    #DBADDRESS: 11100
+    TYPE: ABC
+    TOPIC: "sn,ocr_content,cell_num,Result,error_code,error_msg"
+  - Enable: true
+    Index: 2
+    Mode: TCPIP
+    IP: 127.0.0.1
+    PORT: 13003
+    TIMEOUT: 1000
+    TIMEADDRESS: 15872
+    RESEATADDRESS: 16182
+    #DBADDRESS: 11100
+    TYPE: ABC
+    TOPIC: "sn,ocr_content,cell_num,Result,error_code,error_msg"
+  - Enable: true
+    Index: 3
+    Mode: TCPIP
+    IP: 127.0.0.1
+    PORT: 13004
+    TIMEOUT: 1000
+    TIMEADDRESS: 15872
+    RESEATADDRESS: 16182
+    #DBADDRESS: 11100
+    TYPE: ABC
+    TOPIC: "sn,ocr_content,cell_num,Result,error_code,error_msg"
+  - Enable: true
+    Index: 4
+    Mode: MODBUS
+    IP: 192.168.1.160
+    PORT: 502
+    TIMEOUT: 1000
+    TIMEADDRESS: 15872
+    RESEATADDRESS: 16182
+    #DBADDRESS: 11100
+    TYPE: ABC

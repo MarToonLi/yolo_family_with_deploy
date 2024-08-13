@@ -1,0 +1,40 @@
+Param_ModelConfig:
+  Checkable:
+    ability: 1
+    value: 10
+    CN_Name: 缺陷检测模型相关参数
+  th_conf:
+    type: Edit
+    value: 0.699999988
+    Smallest: 0
+    Biggest: 100000
+    CN_Name: th_conf
+    CN_Discrib: 置信度阈值
+  th_nms:
+    type: Edit
+    value: 0.449999988
+    Smallest: 0
+    Biggest: 100000
+    CN_Name: th_nms
+    CN_Discrib: NMS中的IOU阈值
+  th_obj:
+    type: Edit
+    value: 0.699999988
+    Smallest: 0
+    Biggest: 100000
+    CN_Name: th_obj
+    CN_Discrib: obj阈值
+  defectAreaThreshold:
+    type: Edit
+    value: 900
+    Smallest: 0
+    Biggest: 100000
+    CN_Name: defectAreaThreshold
+    CN_Discrib: 缺陷面积阈值
+  defectLengethThreshold:
+    type: Edit
+    value: 30
+    Smallest: 0
+    Biggest: 100000
+    CN_Name: defectLengethThreshold
+    CN_Discrib: 缺陷长度阈值

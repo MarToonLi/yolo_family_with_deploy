@@ -1,0 +1,7 @@
+Param_AxisMask:
+  X:
+    value: 5
+  Y:
+    value: 10
+  Z:
+    value: 101

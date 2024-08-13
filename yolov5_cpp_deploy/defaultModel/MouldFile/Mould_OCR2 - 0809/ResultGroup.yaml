@@ -1,0 +1,17 @@
+ResultGroup:
+  - OUTPUTIndex: 0
+    CountAddress: 1
+    ResultAddress: 1
+    GroupFinish: 1
+  - OUTPUTIndex: 1
+    CountAddress: 1
+    ResultAddress: 1
+    GroupFinish: 1
+  - OUTPUTIndex: 2
+    CountAddress: 1
+    ResultAddress: 1
+    GroupFinish: 1
+  - OUTPUTIndex: 3
+    CountAddress: 1
+    ResultAddress: 1
+    GroupFinish: 1

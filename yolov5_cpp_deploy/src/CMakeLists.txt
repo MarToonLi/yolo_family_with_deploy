@@ -1,0 +1,4 @@
+add_subdirectory(basealg)
+add_subdirectory(util)
+add_subdirectory(foundation_alg)
+add_subdirectory(algosettingdlg)
