@@ -69,7 +69,7 @@ GIT_INFO = check_git_info()
 def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictionary
     save_dir, epochs, batch_size, weights, single_cls, evolve, data, cfg, resume, noval, nosave, workers, freeze = \
         Path(opt.save_dir), opt.epochs, opt.batch_size, opt.weights, opt.single_cls, opt.evolve, opt.data, opt.cfg, \
-        opt.resume, opt.noval, opt.nosave, opt.workers, opt.freeze
+        opt.resume, opt.noval, opt.nosave, opt.workers, opt.freeze                 # ! 类似地，参数在函数间传递需要使用结构体，而在函数内需要首先unpack
     callbacks.run('on_pretrain_routine_start')
 
     # Directories
@@ -570,13 +570,13 @@ def main(opt, callbacks=Callbacks()):
             'mosaic': (1, 0.0, 1.0),  # image mixup (probability)
             'mixup': (1, 0.0, 1.0),  # image mixup (probability)
             'copy_paste': (1, 0.0, 1.0)}  # segment copy-paste (probability)
-
-        with open(opt.hyp, errors='ignore') as f:
+        
+        with open(opt.hyp, errors='ignore') as f:                             
             hyp = yaml.safe_load(f)  # load hyps dict
             if 'anchors' not in hyp:  # anchors commented in hyp.yaml
                 hyp['anchors'] = 3
-        if opt.noautoanchor:
-            del hyp['anchors'], meta['anchors']
+        if opt.noautoanchor:                                                 # ! 直接删除hyp和meta中对应键值对  
+            del hyp['anchors'], meta['anchors']                              # todo: meta和hyp的结构一致，作用分别是什么？
         opt.noval, opt.nosave, save_dir = True, True, Path(opt.save_dir)  # only val/save final epoch
         # ei = [isinstance(x, (int, float)) for x in hyp.values()]  # evolvable indices
         evolve_yaml, evolve_csv = save_dir / 'hyp_evolve.yaml', save_dir / 'evolve.csv'

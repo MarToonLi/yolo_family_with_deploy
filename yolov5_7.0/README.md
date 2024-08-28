@@ -33,5 +33,15 @@
 
   [YOLOV5训练代码train.py训练参数解析_yolov5 train.py参数-CSDN博客](https://blog.csdn.net/m0_47026232/article/details/129869740)
 
-  
+- [ ] 超参数优化文件：data/hyps
 
+  [YOLO5的数据增强和权重设置hyp.scratch-med.yaml文件解读，degrees角度旋转和水平、垂直翻转解释-CSDN博客](https://blog.csdn.net/qq_51570094/article/details/124350214)
+
+  >1. voc.yaml: 在voc上进化；
+  >2. object365：在objects365上优化；
+  >3. low: 小规模模型 NS；
+  >4. med：中规模，M；
+  >5. high: 大规模：LX等
+
+- [ ] better comments插件的使用：[vscode 插件-better comments-代码注释高亮 - suwanbin - 博客园 (cnblogs.com)](https://www.cnblogs.com/suwanbin/p/13263732.html)
+- [ ] 
