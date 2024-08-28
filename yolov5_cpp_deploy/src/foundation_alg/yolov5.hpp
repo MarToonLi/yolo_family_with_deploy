@@ -73,18 +73,18 @@ private:
     Ort::Env env = Ort::Env(ORT_LOGGING_LEVEL_ERROR, "yolov5-6.1");
 
     const bool keep_ratio = true;
-    std::vector<float> input_image_;		// 输入图片
+    std::vector<float> input_image_;		            // 输入图片
     void normalize_(std::vector<cv::Mat>& frames);		// 归一化函数
     void nms(std::vector<BoxInfo>& input_boxes);
     cv::Mat resize_image(cv::Mat srcimg, int* newh, int* neww, int* top, int* left);
 
    
-    Ort::Session* ort_session;    // 初始化Session指针选项
+    Ort::Session* ort_session;                                   // 初始化Session指针选项
     Ort::SessionOptions sessionOptions = Ort::SessionOptions();  //初始化Session对象
     //SessionOptions sessionOptions;
-    std::vector<char*> input_names;  // 定义一个字符指针vector
-    std::vector<char*> output_names; // 定义一个字符指针vector
-    std::vector<std::vector<int64_t>> input_node_dims; // >=1 outputs  ，二维vector
+    std::vector<char*> input_names;           // 定义一个字符指针vector
+    std::vector<char*> output_names;          // 定义一个字符指针vector
+    std::vector<std::vector<int64_t>> input_node_dims;  // >=1 outputs  ，二维vector
     std::vector<std::vector<int64_t>> output_node_dims; // >=1 outputs ,int64_t C/C++标准
 };
 
