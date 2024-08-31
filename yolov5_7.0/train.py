@@ -433,14 +433,14 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
     # 最为常用的参数
-    parser.add_argument('--weights',         type=str, default=ROOT / 'pts/yolov5n6.pt',                help='initial weights path')
-    parser.add_argument('--cfg',             type=str, default='',                                      help='models/Apple_3_7/yolov5n.yaml')
+    parser.add_argument('--weights',         type=str, default=ROOT / 'pts/yolov5l6.pt',                help='initial weights path')
+    parser.add_argument('--cfg',             type=str, default='models/Apple_3_7/yolov5l.yaml',         help='models/Apple_3_7/yolov5n.yaml')
     parser.add_argument('--data',            type=str, default=ROOT / 'data/Apple_3_7.yaml',            help='dataset.yaml path')
-    parser.add_argument('--hyp',             type=str, default=ROOT / 'data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')   # ?
-    parser.add_argument('--epochs',          type=int, default=100,                                     help='total training epochs')  
-    parser.add_argument('--batch-size',      type=int, default=2,                                       help='total batch size for all GPUs, -1 for autobatch')
+    parser.add_argument('--hyp',             type=str, default=ROOT / 'data/hyps/Apple_3_7_hyp.scratch-low.yaml', help='hyperparameters path')   # ?
+    parser.add_argument('--epochs',          type=int, default=500,                                     help='total training epochs')  
+    parser.add_argument('--batch-size',      type=int, default=-1,                                       help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=1280,                       help='train, val image size (pixels)')
-    parser.add_argument('--optimizer',       type=str, choices=['SGD', 'Adam', 'AdamW'], default='SGD', help='optimizer')
+    parser.add_argument('--optimizer',       type=str, choices=['SGD', 'Adam', 'AdamW'], default='Adam', help='optimizer')
     parser.add_argument('--cos-lr',          action='store_true',                                       help='cosine LR scheduler')
     parser.add_argument('--patience',        type=int, default=100,                                     help='EarlyStopping patience (epochs without improvement)')
     parser.add_argument('--freeze',          nargs='+', type=int, default=[0],                          help='Freeze layers: backbone=10, first3=0 1 2')
@@ -465,7 +465,7 @@ def parse_opt(known=False):
     
     
     # DDP和多GPU等相关
-    parser.add_argument('--device',          default='',                                                help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device',          default=0,                                                help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--resume',          nargs='?', const=True, default=False,                      help='resume most recent training')    # 断点续训
     parser.add_argument('--nosave',          action='store_true',                                       help='only save final checkpoint')
     parser.add_argument('--noval',           action='store_true',                                       help='only validate final epoch')
