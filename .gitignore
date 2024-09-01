@@ -2,3 +2,4 @@
 /.idea
 /yolov5_7.0/runs
 /__pycache__
+/yolov5_7.0/*.out

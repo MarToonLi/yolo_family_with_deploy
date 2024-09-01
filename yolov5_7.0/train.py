@@ -434,8 +434,9 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
     # 最为常用的参数
-    parser.add_argument('--weights',         type=str, default=ROOT / 'pts/yolov5l6.pt',                help='initial weights path')
-    parser.add_argument('--cfg',             type=str, default='models/Apple_3_7/yolov5l.yaml',         help='models/Apple_3_7/yolov5n.yaml')
+    # /home/python_projects/yolo_family_with_deploy/yolov5_7.0/runs/train/exp8/weights/best.pt
+    parser.add_argument('--weights',         type=str, default=ROOT / 'runs/train/exp8/weights/best.pt',help='initial weights path')
+    parser.add_argument('--cfg',             type=str, default='models/Apple_3_7/yolov5s.yaml',         help='models/Apple_3_7/yolov5n.yaml')
     parser.add_argument('--data',            type=str, default=ROOT / 'data/Apple_3_7.yaml',            help='dataset.yaml path')
     parser.add_argument('--hyp',             type=str, default=ROOT / 'data/hyps/Apple_3_7_hyp.scratch-low.yaml', help='hyperparameters path')   # ?
     parser.add_argument('--epochs',          type=int, default=500,                                     help='total training epochs')  
@@ -443,7 +444,7 @@ def parse_opt(known=False):
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=1280,                       help='train, val image size (pixels)')
     parser.add_argument('--optimizer',       type=str, choices=['SGD', 'Adam', 'AdamW'], default='Adam', help='optimizer')
     parser.add_argument('--cos-lr',          action='store_true',                                       help='cosine LR scheduler')
-    parser.add_argument('--patience',        type=int, default=100,                                     help='EarlyStopping patience (epochs without improvement)')
+    parser.add_argument('--patience',        type=int, default=50,                                     help='EarlyStopping patience (epochs without improvement)')
     parser.add_argument('--freeze',          nargs='+', type=int, default=[0],                          help='Freeze layers: backbone=10, first3=0 1 2')
     parser.add_argument('--save-period',     type=int, default=-1,                                      help='Save checkpoint every x epochs (disabled if < 1)')
     parser.add_argument('--seed',            type=int, default=0,                                       help='Global training seed')
@@ -462,7 +463,7 @@ def parse_opt(known=False):
     parser.add_argument('--cache',           type=str, nargs='?', const='ram',                          help='[trick] image --cache ram/disk')        # 缓存数据集，默认关闭
     parser.add_argument('--image-weights',   action='store_true',                                       help='[trick] use weighted image selection for training')  #? 对数据集图片进行加权训练
     parser.add_argument('--multi-scale',     action='store_true',                                       help='[trick] vary img-size +/- 50%%')    # 多尺度训练，训练过程中每次输入图片会放大或缩小50%。
-    parser.add_argument('--label-smoothing', type=float, default=0.0,                                   help='[trick] Label smoothing epsilon') # 表示在每个标签的真实概率上添加一个 epsilon=0.1的噪声，从而使模型对标签的波动更加鲁棒；
+    parser.add_argument('--label-smoothing', type=float, default=0.1,                                   help='[trick] Label smoothing epsilon') # 表示在每个标签的真实概率上添加一个 epsilon=0.1的噪声，从而使模型对标签的波动更加鲁棒；
     
     
     # DDP和多GPU等相关
