@@ -263,8 +263,8 @@ def get_default_args(func):
 
 def get_latest_run(search_dir='.'):
     # Return path to most recent 'last.pt' in /runs (i.e. to --resume from)
-    last_list = glob.glob(f'{search_dir}/**/last*.pt', recursive=True)
-    return max(last_list, key=os.path.getctime) if last_list else ''
+    last_list = glob.glob(f'{search_dir}/**/last*.pt', recursive=True)      # e.g. ['.\\runs\\train\\exp10\\weights\\last.pt', '.\\runs\\train\\exp19\\weights\\last.pt']
+    return max(last_list, key=os.path.getctime) if last_list else ''        # os.path.getctime(filename) 获取文件的时间
 
 
 def file_age(path=__file__):
@@ -343,7 +343,7 @@ def check_git_status(repo='ultralytics/yolov5', branch='master'):
     LOGGER.info(s)
 
 
-@WorkingDirectory(ROOT)
+@WorkingDirectory(ROOT)                                             # 用于在执行该函数时，将工作目录切换到ROOT变量所指定的目录。
 def check_git_info(path='.'):
     # YOLOv5 git info check, return {remote, branch, commit}
     check_requirements('gitpython')
@@ -351,12 +351,12 @@ def check_git_info(path='.'):
     try:
         repo = git.Repo(path)
         remote = repo.remotes.origin.url.replace('.git', '')  # i.e. 'https://github.com/ultralytics/yolov5'
-        commit = repo.head.commit.hexsha  # i.e. '3134699c73af83aac2a481435550b968d5792c0d'
+        commit = repo.head.commit.hexsha                      # i.e. '3134699c73af83aac2a481435550b968d5792c0d'  # 获取当前分支的最新提交的哈希值
         try:
-            branch = repo.active_branch.name  # i.e. 'main'
+            branch = repo.active_branch.name  # i.e. 'main'   # 尝试获取当前活动分支的名称
         except TypeError:  # not on any branch
             branch = None  # i.e. 'detached HEAD' state
-        return {'remote': remote, 'branch': branch, 'commit': commit}
+        return {'remote': remote, 'branch': branch, 'commit': commit}   
     except git.exc.InvalidGitRepositoryError:  # path is not a git dir
         return {'remote': None, 'branch': None, 'commit': None}
 
@@ -571,12 +571,12 @@ def check_amp(model):
         a = m(im).xywhn[0]  # FP32 inference
         m.amp = True
         b = m(im).xywhn[0]  # AMP inference
-        return a.shape == b.shape and torch.allclose(a, b, atol=0.1)  # close to 10% absolute tolerance
+        return a.shape == b.shape and torch.allclose(a, b, atol=0.1)  # ! close to 10% absolute tolerance 检查两个张量是否在某个容忍度范围内近似相等
 
     prefix = colorstr('AMP: ')
     device = next(model.parameters()).device  # get model device
     if device.type in ('cpu', 'mps'):
-        return False  # AMP only used on CUDA devices
+        return False                          # ! AMP only used on CUDA devices
     f = ROOT / 'data' / 'images' / 'bus.jpg'  # image to check
     im = f if f.exists() else 'https://ultralytics.com/images/bus.jpg' if check_online() else np.ones((640, 640, 3))
     try:
