@@ -18,6 +18,8 @@ Usage - formats:
                               yolov5s_edgetpu.tflite     # TensorFlow Edge TPU
                               yolov5s_paddle_model       # PaddlePaddle
 """
+# ! it's cool, and could adapt many format weight file. 
+
 
 import argparse
 import json
@@ -97,27 +99,27 @@ def process_batch(detections, labels, iouv):
 @smart_inference_mode()
 def run(
         data,
-        weights=None,  # model.pt path(s)
-        batch_size=32,  # batch size
-        imgsz=640,  # inference size (pixels)
+        weights=None,      # model.pt path(s)
+        batch_size=32,     # batch size
+        imgsz=640,         # inference size (pixels)
         conf_thres=0.001,  # confidence threshold
         iou_thres=0.6,  # NMS IoU threshold
-        max_det=300,  # maximum detections per image
-        task='val',  # train, val, test, speed or study
-        device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
-        workers=8,  # max dataloader workers (per RANK in DDP mode)
+        max_det=300,    # maximum detections per image
+        task='val',     # train, val, test, speed or study
+        device='',      # cuda device, i.e. 0 or 0,1,2,3 or cpu
+        workers=8,      # max dataloader workers (per RANK in DDP mode)
         single_cls=False,  # treat as single-class dataset
-        augment=False,  # augmented inference
-        verbose=False,  # verbose output
-        save_txt=False,  # save results to *.txt
-        save_hybrid=False,  # save label+prediction hybrid results to *.txt
-        save_conf=False,  # save confidences in --save-txt labels
-        save_json=False,  # save a COCO-JSON results file
+        augment=False,     # augmented inference
+        verbose=False,     # verbose output
+        save_txt=False,    # save results to *.txt
+        save_hybrid=False, # save label+prediction hybrid results to *.txt
+        save_conf=False,   # save confidences in --save-txt labels
+        save_json=False,   # save a COCO-JSON results file
         project=ROOT / 'runs/val',  # save to project/name
-        name='exp',  # save to project/name
-        exist_ok=False,  # existing project/name ok, do not increment
-        half=True,  # use FP16 half-precision inference
-        dnn=False,  # use OpenCV DNN for ONNX inference
+        name='exp',        # save to project/name
+        exist_ok=False,    # existing project/name ok, do not increment
+        half=True,         # TODO use FP16 half-precision inference; So the inference of yolov5 is based on fp16.
+        dnn=False,         # use OpenCV DNN for ONNX inference
         model=None,
         dataloader=None,
         save_dir=Path(''),
@@ -127,7 +129,7 @@ def run(
 ):
     # Initialize/load model and set device
     training = model is not None
-    if training:  # called by train.py
+    if training:  # ! called by train.py
         device, pt, jit, engine = next(model.parameters()).device, True, False, False  # get model device, PyTorch model
         half &= device.type != 'cpu'  # half precision only supported on CUDA
         model.half() if half else model.float()
@@ -142,7 +144,7 @@ def run(
         model = DetectMultiBackend(weights, device=device, dnn=dnn, data=data, fp16=half)
         stride, pt, jit, engine = model.stride, model.pt, model.jit, model.engine
         imgsz = check_img_size(imgsz, s=stride)  # check image size
-        half = model.fp16  # FP16 supported on limited backends with CUDA
+        half = model.fp16                        # FP16 supported on limited backends with CUDA; 
         if engine:
             batch_size = model.batch_size
         else:
@@ -160,7 +162,7 @@ def run(
     is_coco = isinstance(data.get('val'), str) and data['val'].endswith(f'coco{os.sep}val2017.txt')  # COCO dataset
     nc = 1 if single_cls else int(data['nc'])  # number of classes
     iouv = torch.linspace(0.5, 0.95, 10, device=device)  # iou vector for mAP@0.5:0.95
-    niou = iouv.numel()
+    niou = iouv.numel() # numel will return tensor's ele num.
 
     # Dataloader
     if not training:
@@ -200,9 +202,9 @@ def run(
             if cuda:
                 im = im.to(device, non_blocking=True)
                 targets = targets.to(device)
-            im = im.half() if half else im.float()  # uint8 to fp16/32
-            im /= 255  # 0 - 255 to 0.0 - 1.0
-            nb, _, height, width = im.shape  # batch size, channels, height, width
+            im = im.half() if half else im.float()                # ! uint8 to fp16/32
+            im /= 255                                             # ! 0 - 255 to 0.0 - 1.0
+            nb, _, height, width = im.shape                       # batch size, channels, height, width
 
         # Inference
         with dt[1]:
@@ -213,7 +215,7 @@ def run(
             loss += compute_loss(train_out, targets)[1]  # box, obj, cls
 
         # NMS
-        targets[:, 2:] *= torch.tensor((width, height, width, height), device=device)  # to pixels
+        targets[:, 2:] *= torch.tensor((width, height, width, height), device=device)     # to pixels
         lb = [targets[targets[:, 0] == i, 1:] for i in range(nb)] if save_hybrid else []  # for autolabelling
         with dt[2]:
             preds = non_max_suppression(preds,
@@ -248,12 +250,12 @@ def run(
             # Evaluate
             if nl:
                 tbox = xywh2xyxy(labels[:, 1:5])  # target boxes
-                scale_boxes(im[si].shape[1:], tbox, shape, shapes[si][1])  # native-space labels
-                labelsn = torch.cat((labels[:, 0:1], tbox), 1)  # native-space labels
+                scale_boxes(im[si].shape[1:], tbox, shape, shapes[si][1])      # native-space labels
+                labelsn = torch.cat((labels[:, 0:1], tbox), 1)                 # native-space labels
                 correct = process_batch(predn, labelsn, iouv)
                 if plots:
                     confusion_matrix.process_batch(predn, labelsn)
-            stats.append((correct, pred[:, 4], pred[:, 5], labels[:, 0]))  # (correct, conf, pcls, tcls)
+            stats.append((correct, pred[:, 4], pred[:, 5], labels[:, 0]))      # (correct, conf, pcls, tcls)
 
             # Save/log
             if save_txt:
@@ -264,7 +266,7 @@ def run(
 
         # Plot images
         if plots and batch_i < 3:
-            plot_images(im, targets, paths, save_dir / f'val_batch{batch_i}_labels.jpg', names)  # labels
+            plot_images(im, targets, paths, save_dir / f'val_batch{batch_i}_labels.jpg', names)                # labels
             plot_images(im, output_to_target(preds), paths, save_dir / f'val_batch{batch_i}_pred.jpg', names)  # pred
 
         callbacks.run('on_val_batch_end', batch_i, im, targets, paths, shapes, preds)
@@ -338,31 +340,37 @@ def run(
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='dataset.yaml path')
-    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'yolov5s.pt', help='model path(s)')
-    parser.add_argument('--batch-size', type=int, default=32, help='batch size')
-    parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='inference size (pixels)')
-    parser.add_argument('--conf-thres', type=float, default=0.001, help='confidence threshold')
-    parser.add_argument('--iou-thres', type=float, default=0.6, help='NMS IoU threshold')
-    parser.add_argument('--max-det', type=int, default=300, help='maximum detections per image')
-    parser.add_argument('--task', default='val', help='train, val, test, speed or study')
-    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-    parser.add_argument('--workers', type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
-    parser.add_argument('--single-cls', action='store_true', help='treat as single-class dataset')
-    parser.add_argument('--augment', action='store_true', help='augmented inference')
-    parser.add_argument('--verbose', action='store_true', help='report mAP by class')
-    parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
+    # 最为常用的参数
+    parser.add_argument('--data',        type=str, default=ROOT / 'data/Apple_3_7.yaml', help='dataset.yaml path')
+    parser.add_argument('--weights',     nargs='+', type=str, default=ROOT / 'runs/train/exp18/weights/best.pt', help='model path(s)')
+    parser.add_argument('--batch-size',  type=int, default=-1, help='batch size')
+    parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=1280, help='inference size (pixels)')
+    parser.add_argument('--device',      default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--workers',     type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
+    parser.add_argument('--verbose',     action='store_true', help='report mAP by class')
+    parser.add_argument('--save-txt',    action='store_true', help='save results to *.txt')
+    parser.add_argument('--save-conf',   action='store_true', help='save confidences in --save-txt labels')                 # TODO it's rendering
+    parser.add_argument('--half',        action='store_true', help='use FP16 half-precision inference')                     # TODO is it based on the onnx model?
+    parser.add_argument('--dnn',         action='store_true', help='use OpenCV DNN for ONNX inference')                     # TODO if true, will use the onnx format?
+    
+    # 阈值
+    parser.add_argument('--conf-thres',  type=float, default=0.001, help='confidence threshold')
+    parser.add_argument('--iou-thres',   type=float, default=0.6, help='NMS IoU threshold')
+    parser.add_argument('--max-det',     type=int, default=300, help='maximum detections per image')
+    
+    # 不常用内容
+    parser.add_argument('--task',        default='val', help='train, val, test, speed or study')                             # TODO ?
+    parser.add_argument('--single-cls',  action='store_true', help='treat as single-class dataset')
+    parser.add_argument('--augment',     action='store_true', help='augmented inference')                                    # TODO what meaning?
     parser.add_argument('--save-hybrid', action='store_true', help='save label+prediction hybrid results to *.txt')
-    parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
-    parser.add_argument('--save-json', action='store_true', help='save a COCO-JSON results file')
-    parser.add_argument('--project', default=ROOT / 'runs/val', help='save to project/name')
-    parser.add_argument('--name', default='exp', help='save to project/name')
-    parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
-    parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
-    parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
+    parser.add_argument('--save-json',   action='store_true', help='save a COCO-JSON results file')
+    parser.add_argument('--project',     default=ROOT / 'runs/val', help='save to project/name')
+    parser.add_argument('--name',        default='exp', help='save to project/name')
+    parser.add_argument('--exist-ok',    action='store_true', help='existing project/name ok, do not increment')
+
     opt = parser.parse_args()
-    opt.data = check_yaml(opt.data)  # check YAML
-    opt.save_json |= opt.data.endswith('coco.yaml')
+    opt.data = check_yaml(opt.data)                 # check YAML
+    opt.save_json |= opt.data.endswith('coco.yaml') # 位或赋值运算符，有一个为True，则save_json为True
     opt.save_txt |= opt.save_hybrid
     print_args(vars(opt))
     return opt
@@ -378,26 +386,26 @@ def main(opt):
             LOGGER.info('WARNING ⚠️ --save-hybrid will return high mAP from hybrid labels, not from predictions alone')
         run(**vars(opt))
 
-    else:
-        weights = opt.weights if isinstance(opt.weights, list) else [opt.weights]
-        opt.half = torch.cuda.is_available() and opt.device != 'cpu'  # FP16 for fastest results
+    else:  # speed or study
+        weights = opt.weights if isinstance(opt.weights, list) else [opt.weights]          # ! can test more weights's rendering.
+        opt.half = torch.cuda.is_available() and opt.device != 'cpu'                       # ! FP16 for fastest results
         if opt.task == 'speed':  # speed benchmarks
             # python val.py --task speed --data coco.yaml --batch 1 --weights yolov5n.pt yolov5s.pt...
             opt.conf_thres, opt.iou_thres, opt.save_json = 0.25, 0.45, False
             for opt.weights in weights:
-                run(**vars(opt), plots=False)
+                run(**vars(opt), plots=False)                    
 
         elif opt.task == 'study':  # speed vs mAP benchmarks
             # python val.py --task study --data coco.yaml --iou 0.7 --weights yolov5n.pt yolov5s.pt...
             for opt.weights in weights:
                 f = f'study_{Path(opt.data).stem}_{Path(opt.weights).stem}.txt'  # filename to save to
-                x, y = list(range(256, 1536 + 128, 128)), []  # x axis (image sizes), y axis
+                x, y = list(range(256, 1536 + 128, 128)), []                              # x axis (image sizes), y axis
                 for opt.imgsz in x:  # img-size
                     LOGGER.info(f'\nRunning {f} --imgsz {opt.imgsz}...')
                     r, _, t = run(**vars(opt), plots=False)
                     y.append(r + t)  # results and times
                 np.savetxt(f, y, fmt='%10.4g')  # save
-            os.system('zip -r study.zip study_*.txt')
+            os.system('zip -r study.zip study_*.txt')                                      # ! zip the txt files to xxx.zip file.
             plot_val_study(x=x)  # plot
 
 
