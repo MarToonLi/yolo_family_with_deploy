@@ -38,6 +38,7 @@ ROOT = FILE.parents[0]                          # YOLOv5 root directory (e.g. F:
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))                  # add ROOT to PATH
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative (e.g. ".")
+print("ROOT: {}".format(ROOT))
 
 import val as validate  # for end-of-epoch mAP
 from models.experimental import attempt_load
@@ -65,7 +66,7 @@ LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))     # LOCAL_RANK 通常用于指�
 RANK       = int(os.getenv('RANK', -1))           # RANK 表示当前进程在整个分布式训练中的全球排名，通常用于跨多个机器或节点的分布式训练。
 WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))      # WORLD_SIZE 代表分布式训练中总的进程数量或节点数量，即总的工作量大小。
 GIT_INFO = check_git_info()
-input("ss")
+# input("ss")
 
 def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictionary
     save_dir, epochs, batch_size, weights, single_cls, evolve, data, cfg, resume, noval, nosave, workers, freeze = \
@@ -440,8 +441,9 @@ def parse_opt(known=False):
     parser = argparse.ArgumentParser()
     # 最为常用的参数
     # /home/python_projects/yolo_family_with_deploy/yolov5_7.0/runs/train/exp8/weights/best.pt
-    parser.add_argument('--weights',         type=str, default=ROOT / 'runs/train/exp8/weights/best.pt',help='initial weights path')
-    parser.add_argument('--cfg',             type=str, default='models/Apple_3_7/yolov5s.yaml',         help='models/Apple_3_7/yolov5n.yaml')
+    # ROOT / 'runs/train/exp8/weights/best.pt'
+    parser.add_argument('--weights',         type=str, default=ROOT / 'runs/train/exp7/weights/best.pt',help='initial weights path')
+    parser.add_argument('--cfg',             type=str, default=ROOT / 'models/Apple_3_7/yolov5s.yaml',  help='models/Apple_3_7/yolov5n.yaml')
     parser.add_argument('--data',            type=str, default=ROOT / 'data/Apple_3_7.yaml',            help='dataset.yaml path')
     parser.add_argument('--hyp',             type=str, default=ROOT / 'data/hyps/Apple_3_7_hyp.scratch-low.yaml', help='hyperparameters path')   # ?
     parser.add_argument('--epochs',          type=int, default=500,                                     help='total training epochs')  

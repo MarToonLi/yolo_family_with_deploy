@@ -45,23 +45,28 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names
     # Sort by objectness
     i = np.argsort(-conf)
     tp, conf, pred_cls = tp[i], conf[i], pred_cls[i]
+    
+    # tp.shape: 223907, 10; 其中的是10是指IOU阈值从0.5到0.95一共10个值
+    # conf.shape: 223907,;
+    # pred_cls.shape: 223907,;
+    # target_cls.shape: 3685,;
 
     # Find unique classes
-    unique_classes, nt = np.unique(target_cls, return_counts=True)
+    unique_classes, nt = np.unique(target_cls, return_counts=True)           # nt: 各类别的实例数目; nc 类别数目
     nc = unique_classes.shape[0]  # number of classes, number of detections
 
     # Create Precision-Recall curve and compute AP for each class
     px, py = np.linspace(0, 1, 1000), []  # for plotting
     ap, p, r = np.zeros((nc, tp.shape[1])), np.zeros((nc, 1000)), np.zeros((nc, 1000))
     for ci, c in enumerate(unique_classes):
-        i = pred_cls == c
-        n_l = nt[ci]  # number of labels
+        i = pred_cls == c                              # 获取对应类别的预测数目
+        n_l = nt[ci]   # number of labels
         n_p = i.sum()  # number of predictions
         if n_p == 0 or n_l == 0:
             continue
 
-        # Accumulate FPs and TPs
-        fpc = (1 - tp[i]).cumsum(0)
+        # Accumulate FPs and TPs: 为了
+        fpc = (1 - tp[i]).cumsum(0) 
         tpc = tp[i].cumsum(0)
 
         # Recall
@@ -71,8 +76,10 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names
         # Precision
         precision = tpc / (tpc + fpc)  # precision curve
         p[ci] = np.interp(-px, -conf[i], precision[:, 0], left=1)  # p at pr_score
+        
+        #? 上述计算中的recall和precison的tensor对象shape为N,10; 上述运算是计算0.5IOU下的N组P和R值；而下述运算是计算10个IOU下的AP；
 
-        # AP from recall-precision curve
+        # AP from recall-precision curve: 针对每个类别的每个IOU阈值计算出一个子AP
         for j in range(tp.shape[1]):
             ap[ci, j], mpre, mrec = compute_ap(recall[:, j], precision[:, j])
             if plot and j == 0:

@@ -554,6 +554,7 @@ class LoadImagesAndLabels(Dataset):
             ar = ar[irect]
 
             # Set training image shapes
+            #! 但是这里也没有做training的条件判断？又是如何分辨training还是inference的？
             shapes = [[1, 1]] * nb
             for i in range(nb):
                 ari = ar[bi == i]
@@ -654,6 +655,8 @@ class LoadImagesAndLabels(Dataset):
 
         hyp = self.hyp
         mosaic = self.mosaic and random.random() < hyp['mosaic']
+        
+        #! 为什么使用马赛克增强就不能进行letterbox？
         if mosaic:
             # Load mosaic
             img, labels = self.load_mosaic(index)
