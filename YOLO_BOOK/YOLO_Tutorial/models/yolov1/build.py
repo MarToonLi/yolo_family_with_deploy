@@ -62,7 +62,7 @@ def build_yolov1(args, cfg, device, num_classes=80, trainable=False, deploy=Fals
 """
 总结：
 1. 整体看，bias_value偏差值用于初始化obj置信度和分类置信度的预测头
-
+2. 
 
 
 """
