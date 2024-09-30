@@ -31,7 +31,8 @@ def build_yolov1(args, cfg, device, num_classes=80, trainable=False, deploy=Fals
     # -------------- 初始化YOLOv1的pred层参数 --------------
     # Init bias
     init_prob = 0.01
-    bias_value = -torch.log(torch.tensor((1. - init_prob) / init_prob))
+    bias_value = -torch.log(torch.tensor((1. - init_prob) / init_prob))       #? torch.log(99)是什么意思
+    
     # obj pred
     b = model.obj_pred.bias.view(1, -1)
     b.data.fill_(bias_value.item())
@@ -55,3 +56,13 @@ def build_yolov1(args, cfg, device, num_classes=80, trainable=False, deploy=Fals
         criterion = build_criterion(cfg, device, num_classes)
 
     return model, criterion
+
+
+
+"""
+总结：
+1. 整体看，bias_value偏差值用于初始化obj置信度和分类置信度的预测头
+
+
+
+"""
