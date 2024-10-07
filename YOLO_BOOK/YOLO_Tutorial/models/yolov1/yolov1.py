@@ -3,10 +3,11 @@ import torch.nn as nn
 import numpy as np
 
 from utils.misc import multiclass_nms
+# from ..\..\..misc import multiclass_nms
 
-from .yolov1_backbone import build_backbone
-from .yolov1_neck import build_neck
-from .yolov1_head import build_head
+from yolov1.yolov1_backbone import build_backbone
+from yolov1.yolov1_neck import build_neck
+from yolov1.yolov1_head import build_head
 
 
 # YOLOv1
