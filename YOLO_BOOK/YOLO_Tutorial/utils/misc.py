@@ -286,6 +286,7 @@ def nms(bboxes, scores, nms_thresh):
         #reserve all the boundingbox whose ovr less than thresh
         inds = np.where(iou <= nms_thresh)[0]
         order = order[inds + 1]
+        print("ss")
 
     return keep
 
@@ -313,7 +314,7 @@ def multiclass_nms_class_aware(scores, labels, bboxes, nms_thresh, num_classes):
         c_keep = nms(c_bboxes, c_scores, nms_thresh)
         keep[inds[c_keep]] = 1
 
-    keep = np.where(keep > 0)
+    keep = np.where(keep > 0)      
     scores = scores[keep]
     labels = labels[keep]
     bboxes = bboxes[keep]

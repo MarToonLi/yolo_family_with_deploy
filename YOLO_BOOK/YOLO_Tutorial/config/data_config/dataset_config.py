@@ -42,5 +42,15 @@ dataset_cfg = {
         'class_indexs': None,
         'class_names': ('bird', 'butterfly', 'cat', 'cow', 'dog', 'lion', 'person', 'pig', 'tiger', ),
     },
-
+    
+    '3_7_yolo': {
+        'data_name': '3_7_yolo',
+        'num_classes': 5,
+        'class_indexs': None,
+        'class_names': ('scratch',
+                        'damage',
+                        'contamination',
+                        'fpdent',
+                        'fibra'),
+    },
 }

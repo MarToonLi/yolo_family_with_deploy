@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 # from .loss import build_criterion
-from yolov1.loss import build_criterion
+from .loss import build_criterion
 from .yolov1 import YOLOv1
 from config import build_model_config, build_trans_config
 

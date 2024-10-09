@@ -4,6 +4,7 @@ try:
     from .voc import VOCDetection
     from .coco import COCODataset
     from .ourdataset import OurDataset
+    from .ourdataset2 import OurDataset2
     from .data_augment.ssd_augment import SSDAugmentation, SSDBaseTransform
     from .data_augment.yolov5_augment import YOLOv5Augmentation, YOLOv5BaseTransform
 
@@ -11,6 +12,7 @@ except:
     from voc import VOCDetection
     from coco import COCODataset
     from ourdataset import OurDataset
+    from ourdataset2 import OurDataset2
     from data_augment.ssd_augment import SSDAugmentation, SSDBaseTransform
     from data_augment.yolov5_augment import YOLOv5Augmentation, YOLOv5BaseTransform
 
@@ -59,7 +61,15 @@ def build_dataset(args, data_cfg, trans_config, transform, is_train=False):
             trans_config=trans_config,
             load_cache=args.load_cache
             )
-
+    elif args.dataset == '3_7_yolo':
+        dataset = OurDataset2(
+            img_size=args.img_size,
+            data_dir=data_dir,
+            image_set="",
+            transform=transform,
+            trans_config=trans_config,
+            load_cache=args.load_cache
+            )
     return dataset, dataset_info
 
 

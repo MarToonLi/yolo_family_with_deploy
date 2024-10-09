@@ -73,10 +73,10 @@ def parse_args():
                         help='keep training')
 
     # Dataset
-    parser.add_argument('--root', default='/Users/liuhaoran/Desktop/python_work/object-detection/dataset/',
+    parser.add_argument('--root', default=r'F:\Projects\datasets\Hellen-Apple',
                         help='data root')
-    parser.add_argument('-d', '--dataset', default='coco',
-                        help='coco, voc, widerface, crowdhuman')
+    parser.add_argument('-d', '--dataset', default='3_7_yolo',
+                        help='coco, voc, widerface, crowdhuman, 3-7-TH-v1')
     parser.add_argument('--load_cache', action='store_true', default=False,
                         help='load data into memory.')
     
