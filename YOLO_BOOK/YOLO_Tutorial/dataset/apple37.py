@@ -82,8 +82,10 @@ class APPPLE37Dataset(Dataset):
     def __getitem__(self, index):
         return self.pull_item(index)
 
+
     def _load_cats(self):
         self.our_class_labels = [cat["name"] for cat in self.coco.cats.values()]
+
 
     def _load_cache(self):
         # load image cache
@@ -180,6 +182,7 @@ class APPPLE37Dataset(Dataset):
     
 
     def pull_item(self, index):
+        # Mosaic
         if random.random() < self.mosaic_prob:
             # load a mosaic image
             mosaic = True
@@ -335,3 +338,52 @@ if __name__ == "__main__":
         cv2.imshow('gt', image)
         # cv2.imwrite(str(i)+'.jpg', img)
         cv2.waitKey(0)
+        
+        
+"""
+_load_cache
+- image, image_id = self.pull_image(i)
+- bboxes, labels = self.pull_anno(i)
+
+
+pull_image
+- self.coco.loadImgs
+- cv2.imread
+- image, id_
+
+
+pull_anno
+- self.coco.loadImgs
+- self.coco.getAnnIds
+- self.coco.loadAnns
+- bboxes, labels
+
+
+#! load_image_target
+- self.cached_images
+- self.pull_image
+- self.pull_anno
+
+
+load_mosaic
+- self.load_image_target
+- yolov5_mosaic_augment
+
+
+load_mixup
+- self.load_mosaic
+- yolov5_mixup_augment
+- self.load_image_target
+- yolox_mixup_augment
+
+
+#! pull_item
+- load_mosaic
+- load_image_target
+- load_mixup
+- self.transform
+
+
+#! (pull_image\pull_anno) --> load_image_target --> (load_mosaic\load_mixup) --> pull_item;
+
+"""
