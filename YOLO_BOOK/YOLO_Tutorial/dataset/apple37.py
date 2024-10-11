@@ -253,9 +253,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='FreeYOLOv2')
 
     # opt
-    parser.add_argument('--root', default=r'F:\Projects\datasets\Hellen-Apple\3_7_yolo',
+    parser.add_argument('--root', default=r'F:\Projects\datasets\Hellen-Apple\apple37',
                         help='data root')
-    parser.add_argument('--split', default='all',
+    parser.add_argument('--split', default='apple37',
                         help='data split')
     parser.add_argument('-size', '--img_size', default=640, type=int, 
                         help='input image size')
@@ -265,7 +265,7 @@ if __name__ == "__main__":
                         help='mosaic augmentation.')
     parser.add_argument('--mixup', default=None, type=float,
                         help='mixup augmentation.')
-    parser.add_argument('--is_train', action="store_true", default=False,
+    parser.add_argument('--is_train', action="store_true", default=True,
                         help='mixup augmentation.')
     parser.add_argument('--load_cache', action="store_true", default=False,
                         help='load cached data.')
@@ -273,7 +273,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     trans_config = {
-        'aug_type': 'ssd',  # optional: ssd, yolov5
+        'aug_type': 'yolov5',  # optional: ssd, yolov5
                             #? 1. ssd和yolov5差别在哪儿？2. 一下的mosaic和mixup是否在ssd和yolov5风格中都有存在？
         # Basic Augment
         'degrees': 0.0,

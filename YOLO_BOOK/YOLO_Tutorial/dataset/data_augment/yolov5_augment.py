@@ -6,6 +6,7 @@ import torch
 
 
 # ------------------------- Basic augmentations -------------------------
+# 
 ## Spatial transform
 def random_perspective(image,
                        targets=(),
@@ -21,49 +22,62 @@ def random_perspective(image,
     height = image.shape[0] + border[0] * 2  # shape(h,w,c)
     width = image.shape[1] + border[1] * 2
 
-    # Center
-    C = np.eye(3)
-    C[0, 2] = -image.shape[1] / 2  # x translation (pixels)
-    C[1, 2] = -image.shape[0] / 2  # y translation (pixels)
 
-    # Perspective
+    #! ==========================================
+    #!              生成各种变换矩阵
+    #! ==========================================
+    # Center: 计算中心点
+    C = np.eye(3)
+    C[0, 2] = -image.shape[1] / 2  # x translation (pixels): x方向中心
+    C[1, 2] = -image.shape[0] / 2  # y translation (pixels): y方向中心
+
+    # Perspective: 透视变换
     P = np.eye(3)
     P[2, 0] = random.uniform(-perspective, perspective)  # x perspective (about y)
     P[2, 1] = random.uniform(-perspective, perspective)  # y perspective (about x)
 
-    # Rotation and Scale
+    # Rotation and Scale: 旋转和缩放
     R = np.eye(3)
-    a = random.uniform(-degrees, degrees)
+    a = random.uniform(-degrees, degrees)     # 随机生成旋转角度
     # a += random.choice([-180, -90, 0, 90])  # add 90deg rotations to small rotations
-    s = random.uniform(scale[0], scale[1])
+    s = random.uniform(scale[0], scale[1])    # 随机生成缩放比例
     # s = 2 ** random.uniform(-scale, scale)
-    R[:2] = cv2.getRotationMatrix2D(angle=a, center=(0, 0), scale=s)
+    R[:2] = cv2.getRotationMatrix2D(angle=a, center=(0, 0), scale=s)  #! center=(0, 0)
 
-    # Shear
+    # Shear: 剪切矩阵
     S = np.eye(3)
     S[0, 1] = math.tan(random.uniform(-shear, shear) * math.pi / 180)  # x shear (deg)
     S[1, 0] = math.tan(random.uniform(-shear, shear) * math.pi / 180)  # y shear (deg)
 
-    # Translation
+    # Translation: 平移矩阵
     T = np.eye(3)
-    T[0, 2] = random.uniform(0.5 - translate, 0.5 + translate) * width  # x translation (pixels)
+    T[0, 2] = random.uniform(0.5 - translate, 0.5 + translate) * width   # x translation (pixels)
     T[1, 2] = random.uniform(0.5 - translate, 0.5 + translate) * height  # y translation (pixels)
 
     # Combined rotation matrix
     M = T @ S @ R @ P @ C  # order of operations (right to left) is IMPORTANT
+    
+    
+    #! ==========================================
+    #!              Transform image
+    #! ==========================================
     if (border[0] != 0) or (border[1] != 0) or (M != np.eye(3)).any():  # image changed
-        if perspective:
+        if perspective:  # 透视变换函数
             image = cv2.warpPerspective(image, M, dsize=(width, height), borderValue=(114, 114, 114))
-        else:  # affine
+        else:            # 仿射变换函数
             image = cv2.warpAffine(image, M[:2], dsize=(width, height), borderValue=(114, 114, 114))
 
-    # Transform label coordinates
+
+
+    #! ==========================================
+    #!        Transform label coordinates
+    #! ==========================================
     n = len(targets)
     if n:
         new = np.zeros((n, 4))
         # warp boxes
         xy = np.ones((n * 4, 3))
-        xy[:, :2] = targets[:, [1, 2, 3, 4, 1, 4, 3, 2]].reshape(n * 4, 2)  # x1y1, x2y2, x1y2, x2y1
+        xy[:, :2] = targets[:, [1, 2, 3, 4, 1, 4, 3, 2]].reshape(n * 4, 2)         # x1y1, x2y2, x1y2, x2y1
         xy = xy @ M.T  # transform
         xy = (xy[:, :2] / xy[:, 2:3] if perspective else xy[:, :2]).reshape(n, 8)  # perspective rescale or affine
 
@@ -80,9 +94,11 @@ def random_perspective(image,
 
     return image, targets
 
+
+#! HSV增强: 
 ## Color transform
 def augment_hsv(img, hgain=0.5, sgain=0.5, vgain=0.5):
-    r = np.random.uniform(-1, 1, 3) * [hgain, sgain, vgain] + 1  # random gains
+    r = np.random.uniform(-1, 1, 3) * [hgain, sgain, vgain] + 1     # random gains --> [0~2]
     hue, sat, val = cv2.split(cv2.cvtColor(img, cv2.COLOR_BGR2HSV))
     dtype = img.dtype  # uint8
 
@@ -91,17 +107,30 @@ def augment_hsv(img, hgain=0.5, sgain=0.5, vgain=0.5):
     lut_sat = np.clip(x * r[1], 0, 255).astype(dtype)
     lut_val = np.clip(x * r[2], 0, 255).astype(dtype)
 
-    img_hsv = cv2.merge((cv2.LUT(hue, lut_hue), cv2.LUT(sat, lut_sat), cv2.LUT(val, lut_val))).astype(dtype)
+    #! cv2.LUT, hue根据lut_hue进行转换
+    img_hsv = cv2.merge((cv2.LUT(hue, lut_hue), cv2.LUT(sat, lut_sat), cv2.LUT(val, lut_val))).astype(dtype)   
     cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)  # no return needed
+
+    """_summary_
+    cv2.LUT: 函数定义的意思是，hue根据查找表更新hue的每个元素，其中hue的元素值与查找表的索引相匹配。
+    1. 使用场景: 比如图像增强。
+        - 上述场景的SV通道增强需求，较为简单，其实可以通过直接乘以r[2]实现
+        - H通道增强：H(0~360);超过360会循环进行到较低的H值，我认为是不合理的 
+          #? 如果H方式合理，那么SV通道是否可以效仿，比如((x * r[1]) % 255)
+    """
+
+
 
 
 # ------------------------- Strong augmentations -------------------------
+#! 被Dataset类所使用
+#! 马赛克操作：1. 选择四张图像；2. 四张图像的中心点位置偏移；(无其他数据增强方法) 3. 图像组合和bbox组合； 4. random_perspective经典操作
 ## YOLOv5-Mosaic
 def yolov5_mosaic_augment(image_list, target_list, img_size, affine_params, is_train=False):
     assert len(image_list) == 4
 
     mosaic_img = np.ones([img_size*2, img_size*2, image_list[0].shape[2]], dtype=np.uint8) * 114
-    # mosaic center
+    #! mosaic center
     yc, xc = [int(random.uniform(-x, 2*img_size + x)) for x in [-img_size // 2, -img_size // 2]]
     # yc = xc = self.img_size
 
@@ -183,10 +212,13 @@ def yolov5_mosaic_augment(image_list, target_list, img_size, affine_params, is_t
 
     return mosaic_img, mosaic_target
 
+#! new_image可能来自mosaic也可能来自原图！
+#! Mixup：将两个样本进行混合，其中图像混合方式是逐像素加权，标签混合方式是全保留！
 ## YOLOv5-Mixup
 def yolov5_mixup_augment(origin_image, origin_target, new_image, new_target):
-    if origin_image.shape[:2] != new_image.shape[:2]:
-        img_size = max(new_image.shape[:2])
+    if origin_image.shape[:2] != new_image.shape[:2]:  
+        #! 一般是不会出现这种状况，而如果出现下述代码块是不对的，因为resize图像，标签没有同步resize；
+        img_size = max(new_image.shape[:2])          # 以new_image为基准！
         # origin_image is not a mosaic image
         orig_h, orig_w = origin_image.shape[:2]
         scale_ratio = img_size / max(orig_h, orig_w)
@@ -194,14 +226,14 @@ def yolov5_mixup_augment(origin_image, origin_target, new_image, new_target):
             interp = cv2.INTER_LINEAR if scale_ratio > 1 else cv2.INTER_AREA
             resize_size = (int(orig_w * scale_ratio), int(orig_h * scale_ratio))
             origin_image = cv2.resize(origin_image, resize_size, interpolation=interp)
-
+        #TODO: 哪种方式的resize可能会引起padding？
         # pad new image
         pad_origin_image = np.ones([img_size, img_size, origin_image.shape[2]], dtype=np.uint8) * 114
         pad_origin_image[:resize_size[1], :resize_size[0]] = origin_image
         origin_image = pad_origin_image.copy()
         del pad_origin_image
 
-    r = np.random.beta(32.0, 32.0)  # mixup ratio, alpha=beta=32.0
+    r = np.random.beta(32.0, 32.0)  # mixup ratio, alpha=beta=32.0  # 从beta分布中采样; 定义在(0,1)区间的连续概率分布
     mixup_image = r * origin_image.astype(np.float32) + \
                   (1.0 - r)* new_image.astype(np.float32)
     mixup_image = mixup_image.astype(np.uint8)
@@ -229,6 +261,7 @@ def yolox_mixup_augment(origin_img, origin_target, new_img, new_target, img_size
     orig_h, orig_w = new_img.shape[:2]
     cp_scale_ratio = img_size / max(orig_h, orig_w)
     if cp_scale_ratio != 1: 
+        #! 一般是不会出现这种状况，而如果出现下述代码块是不对的，因为resize图像，标签没有同步resize；
         interp = cv2.INTER_LINEAR if cp_scale_ratio > 1 else cv2.INTER_AREA
         resized_new_img = cv2.resize(
             new_img, (int(orig_w * cp_scale_ratio), int(orig_h * cp_scale_ratio)), interpolation=interp)
@@ -301,6 +334,7 @@ def yolox_mixup_augment(origin_img, origin_target, new_img, new_target, img_size
         
 
 # ------------------------- Preprocessers -------------------------
+#TODO: 为什么YOLOv5Augmentation中不需要考虑max_stride，而YOLOv5BaseTransform需要？？
 ## YOLOv5-style Transform for Train
 class YOLOv5Augmentation(object):
     def __init__(self, 
@@ -326,9 +360,10 @@ class YOLOv5Augmentation(object):
 
         # hsv augment
         augment_hsv(img, hgain=self.trans_config['hsv_h'], 
-                    sgain=self.trans_config['hsv_s'], 
-                    vgain=self.trans_config['hsv_v'])
+                        sgain=self.trans_config['hsv_s'], 
+                        vgain=self.trans_config['hsv_v'])
         
+        #! 虽然mosaic==False时会执行random_perspective，但并不意味着mosaic==True时不会执行random_perspective；
         if not mosaic:
             # rescale bbox
             boxes_ = target["boxes"].copy()
@@ -353,7 +388,7 @@ class YOLOv5Augmentation(object):
         # random flip
         if random.random() < 0.5:
             w = img.shape[1]
-            img = np.fliplr(img).copy()
+            img = np.fliplr(img).copy()                  #! 将数组在左右方向上翻转
             boxes = target['boxes'].copy()
             boxes[..., [0, 2]] = w - boxes[..., [2, 0]]
             target["boxes"] = boxes
@@ -376,6 +411,7 @@ class YOLOv5Augmentation(object):
 
         return pad_image, target, [dw, dh]
 
+##! resize --> tensor --> padding
 ## YOLOv5-style Transform for Eval
 class YOLOv5BaseTransform(object):
     def __init__(self, img_size=640, max_stride=32):
@@ -422,6 +458,15 @@ class YOLOv5BaseTransform(object):
         pad_img_h = img_h0 + dh
         pad_img_w = img_w0 + dw
         pad_image = torch.ones([img_tensor.size(0), pad_img_h, pad_img_w]).float() * 114.
-        pad_image[:, :img_h0, :img_w0] = img_tensor
+        pad_image[:, :img_h0, :img_w0] = img_tensor                                          #! 左上角填充！因此不需要对boxes进行修改
 
         return pad_image, target, [dw, dh]
+
+
+        """
+        1. yolo风格的resize 不是 ssd简单的正方形resize，而是保留了比例的;
+        2. augment_hsv中的img是numpy数组，属于可变对象，因此函数中img发生变化，不需要return该img
+        3. YOLOv5BaseTransform这里的填充操作是为了使图像满足可以被模型使用，允许每次输入图像的小边长度不同；YOLOv5Augmentation的填充操作是为了模型的输入图像统一宽高
+        4. 虽然mosaic==False时会执行random_perspective，但并不意味着mosaic==True时不会执行random_perspective；
+        
+        """
