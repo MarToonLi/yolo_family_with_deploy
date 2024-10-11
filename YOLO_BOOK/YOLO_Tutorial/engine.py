@@ -1,7 +1,7 @@
 """
     该python文件包含了若干个训练常用的Trainer类，包括以下两种：
     1. YOLOv8Trainer：该Trainer类主要用于训练YOLOv1~v5等YOLO模型，相关参数如optimizer参数、学习策略等均采用默认设置；
-    2. YoloxTrainer：该Trainer类主要用于训练YOLOX和笔者实现的较为简单的YOLOv7模型，相关参数如optimizer参数、学习策略等均采用默认设置；
+    2. YoloxTrainer： 该Trainer类主要用于训练YOLOX和笔者实现的较为简单的YOLOv7模型，相关参数如optimizer参数、学习策略等均采用默认设置；
     读者可以根据自己的需求来调整所使用的Trainer类的参数
 """
 
@@ -93,7 +93,7 @@ class Yolov8Trainer(object):
         self.train_loader = build_dataloader(self.args, self.dataset, self.args.batch_size // self.world_size, CollateFunc())
 
         # ---------------------------- 构建测试模型性能的Evaluator类 ----------------------------
-        self.evaluator = build_evluator(self.args, self.data_cfg, self.val_transform, self.device)
+        self.evaluator = build_evluator(self.args, self.data_cfg, self.val_transform, self.device)  #TODO: 在这里加载测试数据集
 
         # ---------------------------- 构建梯度缩放器 ----------------------------
         self.scaler = torch.cuda.amp.GradScaler(enabled=self.args.fp16)
@@ -247,7 +247,7 @@ class Yolov8Trainer(object):
                 images, targets, img_size = self.rescale_image_targets(
                     images, targets, self.model_cfg['stride'], self.args.min_box_size, self.model_cfg['multi_scale'])
             else:
-                targets = self.refine_targets(targets, self.args.min_box_size)
+                targets = self.refine_targets(targets, self.args.min_box_size)      #! 重要的地方
                 
             # 可视化训练阶段的数据和标签，以便查看数据是否有bug
             if self.args.vis_tgt:
@@ -258,6 +258,7 @@ class Yolov8Trainer(object):
                 # 前向推理
                 outputs = model(images)
                 # 计算损失
+                ### !!! 损失计算时，targets中的bbox是原始数据，而outputs中的bbox在模型输出前已经进行了解码 
                 loss_dict = self.criterion(outputs=outputs, targets=targets, epoch=self.epoch)
                 losses = loss_dict['losses']
                 # 参考YOLOv5 & v8项目，损失前面要乘以batch size

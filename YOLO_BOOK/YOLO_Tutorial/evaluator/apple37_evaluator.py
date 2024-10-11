@@ -54,7 +54,7 @@ class APPLE37Evaluator():
         """
         model.eval()
         ids = []
-        data_dict = []
+        data_dict = []  #! 包含了测试样本的bbox、label和scores，送入coco接口后，cocoAPI中计算损失
         num_images = len(self.dataset)
         print('total number of images: %d' % (num_images))
 
@@ -68,19 +68,20 @@ class APPLE37Evaluator():
             orig_h, orig_w, _ = img.shape
 
             # preprocess
-            x, _, deltas = self.transform(img)
+            x, _, deltas = self.transform(img)          #! Evaluator这一part用的是BaseTransform(只要resize和tensor)
             x = x.unsqueeze(0).to(self.device) / 255.
             
             id_ = int(id_)
             ids.append(id_)
+            
             # inference
             outputs = model(x)
             bboxes, scores, cls_inds = outputs
 
             # rescale bboxes
             origin_img_size = [orig_h, orig_w]
-            cur_img_size = [*x.shape[-2:]]
-            bboxes = rescale_bboxes(bboxes, origin_img_size, cur_img_size, deltas)
+            cur_img_size    = [*x.shape[-2:]]
+            bboxes = rescale_bboxes(bboxes, origin_img_size, cur_img_size, deltas)  # TODO: deltas是啥意思？
 
             for i, box in enumerate(bboxes):
                 x1 = float(box[0])
@@ -105,7 +106,7 @@ class APPLE37Evaluator():
             _, tmp = tempfile.mkstemp()
             json.dump(data_dict, open(tmp, 'w'))
             cocoDt = cocoGt.loadRes(tmp)
-            cocoEval = COCOeval(self.dataset.coco, cocoDt, annType[1])
+            cocoEval = COCOeval(self.dataset.coco, cocoDt, annType[1])  # TODO: 要看到如何计算损失的！
             cocoEval.params.imgIds = ids
             cocoEval.evaluate()
             cocoEval.accumulate()
