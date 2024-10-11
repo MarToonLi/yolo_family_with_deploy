@@ -51,11 +51,13 @@ class Compose(object):
         return img, boxes, labels
 
 
+#! 仅修改了image的数据类型的astype操作
 class ConvertFromInts(object):
     def __call__(self, image, boxes=None, labels=None):
         return image.astype(np.float32), boxes, labels
 
-
+#! 仅涉及BGR和HSV之间的cvtColor操作
+# 未使用
 class ConvertColor(object):
     def __init__(self, current='BGR', transform='HSV'):
         self.transform = transform
@@ -86,7 +88,7 @@ class Resize(object):
 
         return image, boxes, labels
 
-
+# 未使用
 class RandomSaturation(object):
     def __init__(self, lower=0.5, upper=1.5):
         self.lower = lower
@@ -96,11 +98,11 @@ class RandomSaturation(object):
 
     def __call__(self, image, boxes=None, labels=None):
         if random.randint(2):
-            image[:, :, 1] *= random.uniform(self.lower, self.upper)
+            image[:, :, 1] *= random.uniform(self.lower, self.upper)   # 如果超过255咋整
 
         return image, boxes, labels
 
-
+# 未使用
 class RandomHue(object):
     def __init__(self, delta=18.0):
         assert delta >= 0.0 and delta <= 360.0
@@ -113,7 +115,7 @@ class RandomHue(object):
             image[:, :, 0][image[:, :, 0] < 0.0] += 360.0
         return image, boxes, labels
 
-
+# 未使用
 class RandomLightingNoise(object):
     def __init__(self):
         self.perms = ((0, 1, 2), (0, 2, 1),
@@ -127,7 +129,7 @@ class RandomLightingNoise(object):
             image = shuffle(image)
         return image, boxes, labels
 
-
+# 未使用
 class RandomContrast(object):
     def __init__(self, lower=0.5, upper=1.5):
         self.lower = lower
@@ -142,7 +144,7 @@ class RandomContrast(object):
             image *= alpha
         return image, boxes, labels
 
-
+# 未使用
 class RandomBrightness(object):
     def __init__(self, delta=32):
         assert delta >= 0.0
@@ -298,7 +300,7 @@ class RandomHorizontalFlip(object):
             boxes[:, 0::2] = width - boxes[:, 2::-2]
         return image, boxes, classes
 
-
+# 未使用
 class SwapChannels(object):
     """Transforms a tensorized image by swapping the channels in the order
      specified in the swap tuple.
@@ -324,7 +326,7 @@ class SwapChannels(object):
         image = image[:, :, self.swaps]
         return image
 
-
+# 未使用
 class PhotometricDistort(object):
     def __init__(self):
         self.pd = [
@@ -366,6 +368,7 @@ class SSDAugmentation(object):
         boxes = target['boxes'].copy()
         labels = target['labels'].copy()
         deltas = None
+        
         # augment
         image, boxes, labels = self.augment(image, boxes, labels)
 
@@ -379,29 +382,45 @@ class SSDAugmentation(object):
     
 
 ## SSD-style valTransform
-class SSDBaseTransform(object):
+class SSDBaseTransform(object):                            
     def __init__(self, img_size):
         self.img_size = img_size
 
-    def __call__(self, image, target=None, mosaic=False):
+    def __call__(self, image, target=None, mosaic=False):  #! SSDBaseTransform的应用场景主要是, 模型的validation和inference;
+        """
+        image: (numpy.array) [H, W, B]
+        """
         deltas = None
+        
         # resize
         orig_h, orig_w = image.shape[:2]
-        image = cv2.resize(image, (self.img_size, self.img_size)).astype(np.float32)
+        image = cv2.resize(image, (self.img_size, self.img_size)).astype(np.float32)       #! 从整型转换为浮点型
         
-        # scale targets
+        # scale targets (跟随img_size发生变化)
         if target is not None:
             boxes = target['boxes'].copy()
             labels = target['labels'].copy()
             img_h, img_w = image.shape[:2]
-            boxes[..., [0, 2]] = boxes[..., [0, 2]] / orig_w * img_w
-            boxes[..., [1, 3]] = boxes[..., [1, 3]] / orig_h * img_h
+            boxes[..., [0, 2]] = boxes[..., [0, 2]] / orig_w * img_w   # x, w
+            boxes[..., [1, 3]] = boxes[..., [1, 3]] / orig_h * img_h   # y, h
             target['boxes'] = boxes
         
         # to tensor
-        img_tensor = torch.from_numpy(image).permute(2, 0, 1).contiguous().float()
+        img_tensor = torch.from_numpy(image).permute(2, 0, 1).contiguous().float()  # [H, W, B] --> [B, H, W]
         if target is not None:
-            target['boxes'] = torch.from_numpy(boxes).float()
+            target['boxes'] = torch.from_numpy(boxes).float()       # 可能都是整形，所以需要从整型变成浮点型，便于模型训练和训练优化
             target['labels'] = torch.from_numpy(labels).float()
             
         return img_tensor, target, deltas
+
+
+        """
+        1.  object类支持更高级的特性
+        2. 实现了 __call__ 的类的实例(对象)可以使用 () 运算符进行调用。
+            # 实例化对象
+            callable_instance = CallableClass("Alice")
+            # 调用对象，就像调用函数一样
+            result = callable_instance("Hello")
+        
+        
+        """

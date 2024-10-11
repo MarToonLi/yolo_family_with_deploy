@@ -21,7 +21,7 @@ our_class_labels = ('bird', 'butterfly', 'cat', 'cow', 'dog')
 
 
 
-class OurDataset2(Dataset):
+class APPPLE37Dataset(Dataset):
     """
     Our dataset class.
     """
@@ -43,7 +43,7 @@ class OurDataset2(Dataset):
         """
         self.img_size = img_size
         # self.image_set = image_set
-        self.image_set = "all"
+        self.image_set = image_set
         self.json_file = '{}.json'.format(self.image_set)
         self.data_dir = data_dir
         self.coco = COCO(os.path.join(self.data_dir, 'annotations', self.json_file))
@@ -260,7 +260,7 @@ if __name__ == "__main__":
     parser.add_argument('-size', '--img_size', default=640, type=int, 
                         help='input image size')
     parser.add_argument('--min_box_size', default=8.0, type=float,
-                        help='min size of target bounding box.')
+                        help='min size of target bounding box.')  #? 什么意思？ 小于该阈值的实例会被舍弃吗？
     parser.add_argument('--mosaic', default=None, type=float,
                         help='mosaic augmentation.')
     parser.add_argument('--mixup', default=None, type=float,
@@ -274,6 +274,7 @@ if __name__ == "__main__":
 
     trans_config = {
         'aug_type': 'ssd',  # optional: ssd, yolov5
+                            #? 1. ssd和yolov5差别在哪儿？2. 一下的mosaic和mixup是否在ssd和yolov5风格中都有存在？
         # Basic Augment
         'degrees': 0.0,
         'translate': 0.2,
@@ -293,7 +294,7 @@ if __name__ == "__main__":
 
     transform, trans_cfg = build_transform(args, trans_config, 32, args.is_train)
 
-    dataset = OurDataset2(
+    dataset = APPPLE37Dataset(
         img_size=args.img_size,
         data_dir=args.root,
         image_set=args.split,

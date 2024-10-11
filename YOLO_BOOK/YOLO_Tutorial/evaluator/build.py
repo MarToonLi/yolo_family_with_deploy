@@ -3,7 +3,7 @@ import os
 from evaluator.coco_evaluator import COCOAPIEvaluator
 from evaluator.voc_evaluator import VOCAPIEvaluator
 from evaluator.ourdataset_evaluator import OurDatasetEvaluator
-from evaluator.ourdataset_evaluator2 import OurDataset2Evaluator
+from evaluator.apple37_evaluator import APPLE37Evaluator
 
 
 
@@ -33,11 +33,11 @@ def build_evluator(args, data_cfg, transform, device):
             image_set='val',
             transform=transform
         )
-    elif args.dataset == '3_7_yolo':
-        evaluator = OurDataset2Evaluator(
+    elif args.dataset == 'apple37':
+        evaluator = APPLE37Evaluator(
             data_dir=data_dir,
             device=device,
-            image_set='',
+            image_set='apple37',
             transform=transform
         )
     return evaluator

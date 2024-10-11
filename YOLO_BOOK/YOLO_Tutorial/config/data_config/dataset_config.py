@@ -43,8 +43,8 @@ dataset_cfg = {
         'class_names': ('bird', 'butterfly', 'cat', 'cow', 'dog', 'lion', 'person', 'pig', 'tiger', ),
     },
     
-    '3_7_yolo': {
-        'data_name': '3_7_yolo',
+    'apple37': {
+        'data_name': 'apple37',
         'num_classes': 5,
         'class_indexs': None,
         'class_names': ('scratch',

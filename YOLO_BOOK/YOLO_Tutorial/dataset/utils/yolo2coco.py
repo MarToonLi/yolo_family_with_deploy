@@ -110,6 +110,6 @@ if __name__ == '__main__':
     parseXmlFiles(args.image_path, args.anno_path, args.save_path, args.json_name)
     # 务必确保 classes.txt文件存在于标注文件夹中，并且正确列出所有类别。
 
-
+# 目标检测中数据集格式之间的相互转换--coco、voc、yolo
 # https://blog.csdn.net/heart_warmonger/article/details/142036018#:~:text=COCO%EF%BC%88Com
 # 仅限于一个子数据集

@@ -66,7 +66,7 @@ def xywhn2xywh(bbox, size):
 
 def parseXmlFiles(image_path, anno_path):
     assert os.path.exists(image_path), f"ERROR {image_path} does not exist."
-    assert os.path.exists(anno_path), f"ERROR {anno_path} does not exist."
+    assert os.path.exists(anno_path),  f"ERROR {anno_path} does not exist."
 
     subset_name = os.path.basename(image_path)
 
@@ -94,7 +94,7 @@ def parseXmlFiles_root(root_image_path, root_anno_path, save_path, json_name='tr
     subsets = os.listdir(root_image_path)
     subset_image_path = [os.path.join(root_image_path, subset ) for subset in subsets]
     subset_anno_path = [os.path.join(root_anno_path, subset ) for subset in subsets]
-    json_path = os.path.join(save_path, "all.json")
+    json_path = os.path.join(save_path, json_name)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     print(json_path)
@@ -117,10 +117,10 @@ def parseXmlFiles_root(root_image_path, root_anno_path, save_path, json_name='tr
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="YOLO to COCO format converter.")
-    parser.add_argument('--anno-path', type=str,default=r'F:\Projects\datasets\Hellen-Apple\3_7_yolo\labels',  required=False, help='Directory path to YOLO annotations')
-    parser.add_argument('--image-path', type=str,default=r'F:\Projects\datasets\Hellen-Apple\3_7_yolo\images', required=False, help='Directory path to images')
-    parser.add_argument('--save-path', type=str,default=r'F:\Projects\datasets\Hellen-Apple\3_7_yolo\annotations',  required=False, help='Directory path to save COCO formatted annotation')
-    parser.add_argument('--json-name', type=str, default='train.json', help='Output JSON file name')
+    parser.add_argument('--anno-path', type=str,default=r'F:\Projects\datasets\Hellen-Apple\apple37\labels',  required=False, help='Directory path to YOLO annotations')
+    parser.add_argument('--image-path', type=str,default=r'F:\Projects\datasets\Hellen-Apple\apple37\images', required=False, help='Directory path to images')
+    parser.add_argument('--save-path', type=str,default=r'F:\Projects\datasets\Hellen-Apple\apple37\annotations',  required=False, help='Directory path to save COCO formatted annotation')
+    parser.add_argument('--json-name', type=str, default='apple37.json', help='Output JSON file name')
 
     args = parser.parse_args()
 
@@ -130,3 +130,25 @@ if __name__ == '__main__':
 
 # https://blog.csdn.net/heart_warmonger/article/details/142036018#:~:text=COCO%EF%BC%88Com
 # 仅限于一个子数据集
+# images可以分布在不同的文件夹下;
+    """
+    格式：
+    Hellen-Apple:
+        apple37:
+            annotations(coco):
+                apple37.json
+            images:
+                1:
+                    xxx.jpg
+                2:
+                3:
+                ...
+                
+            labels:(yolo)
+                1:
+                    xxx.txt
+                2:
+                3:
+                ...
+                classes.txt
+    """

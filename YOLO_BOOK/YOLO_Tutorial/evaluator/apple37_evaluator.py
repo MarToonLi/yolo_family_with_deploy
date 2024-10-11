@@ -2,7 +2,7 @@ import json
 import tempfile
 import torch
 from dataset.ourdataset import OurDataset
-from dataset.ourdataset2 import OurDataset2
+from dataset.apple37 import APPPLE37Dataset
 from utils.box_ops import rescale_bboxes
 
 try:
@@ -11,7 +11,7 @@ except:
     print("It seems that the COCOAPI is not installed.")
 
 
-class OurDataset2Evaluator():
+class APPLE37Evaluator():
     """
     COCO AP Evaluation class.
     All the data in the val2017 dataset are processed \
@@ -38,7 +38,7 @@ class OurDataset2Evaluator():
         self.ap50_95 = 0.
         self.ap50 = 0.
         # ----------------- Dataset -----------------
-        self.dataset = OurDataset2(data_dir=data_dir, image_set=image_set)
+        self.dataset = APPPLE37Dataset(data_dir=data_dir, image_set=image_set)
 
 
     @torch.no_grad()

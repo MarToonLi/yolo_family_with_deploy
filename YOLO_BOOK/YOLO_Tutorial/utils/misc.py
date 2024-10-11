@@ -286,7 +286,6 @@ def nms(bboxes, scores, nms_thresh):
         #reserve all the boundingbox whose ovr less than thresh
         inds = np.where(iou <= nms_thresh)[0]
         order = order[inds + 1]
-        print("ss")
 
     return keep
 

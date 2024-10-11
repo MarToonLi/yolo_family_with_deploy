@@ -75,8 +75,8 @@ def parse_args():
     # Dataset
     parser.add_argument('--root', default=r'F:\Projects\datasets\Hellen-Apple',
                         help='data root')
-    parser.add_argument('-d', '--dataset', default='3_7_yolo',
-                        help='coco, voc, widerface, crowdhuman, 3-7-TH-v1')
+    parser.add_argument('-d', '--dataset', default='apple37',
+                        help='coco, voc, widerface, crowdhuman, apple37')
     parser.add_argument('--load_cache', action='store_true', default=False,
                         help='load data into memory.')
     

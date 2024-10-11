@@ -4,7 +4,7 @@ try:
     from .voc import VOCDetection
     from .coco import COCODataset
     from .ourdataset import OurDataset
-    from .ourdataset2 import OurDataset2
+    from .apple37 import APPPLE37Dataset
     from .data_augment.ssd_augment import SSDAugmentation, SSDBaseTransform
     from .data_augment.yolov5_augment import YOLOv5Augmentation, YOLOv5BaseTransform
 
@@ -12,7 +12,7 @@ except:
     from voc import VOCDetection
     from coco import COCODataset
     from ourdataset import OurDataset
-    from ourdataset2 import OurDataset2
+    from apple37 import APPPLE37Dataset
     from data_augment.ssd_augment import SSDAugmentation, SSDBaseTransform
     from data_augment.yolov5_augment import YOLOv5Augmentation, YOLOv5BaseTransform
 
@@ -61,11 +61,11 @@ def build_dataset(args, data_cfg, trans_config, transform, is_train=False):
             trans_config=trans_config,
             load_cache=args.load_cache
             )
-    elif args.dataset == '3_7_yolo':
-        dataset = OurDataset2(
+    elif args.dataset == 'apple37':
+        dataset = APPPLE37Dataset(
             img_size=args.img_size,
             data_dir=data_dir,
-            image_set="",
+            image_set="apple37",
             transform=transform,
             trans_config=trans_config,
             load_cache=args.load_cache
@@ -75,9 +75,10 @@ def build_dataset(args, data_cfg, trans_config, transform, is_train=False):
 
 # ------------------------------ Transform ------------------------------
 def build_transform(args, trans_config, max_stride=32, is_train=False):
-    # Modify trans_config
+    # Modify trans_config (with args.)
     if is_train:
         ## mosaic prob.
+        #! 原则是 1. 如果测试则不使用任何数据增强手段；2. 如果训练，则要么使用默认值要么使用args的指定值
         if args.mosaic is not None:
             trans_config['mosaic_prob']=args.mosaic if is_train else 0.0
         else:
@@ -89,12 +90,13 @@ def build_transform(args, trans_config, max_stride=32, is_train=False):
             trans_config['mixup_prob']=trans_config['mixup_prob']  if is_train else 0.0
 
     # Transform
+    # BaseTransform: 意味着仅包含图像resize、边界框resize、图像数据和标签数据的tensor化。
     if trans_config['aug_type'] == 'ssd':
         if is_train:
             transform = SSDAugmentation(img_size=args.img_size,)
         else:
             transform = SSDBaseTransform(img_size=args.img_size,)
-        trans_config['mosaic_prob'] = 0.0
+        trans_config['mosaic_prob'] = 0.0    #! ssd风格是不会使用mosaic和mixup数据增强方法的
         trans_config['mixup_prob'] = 0.0
 
     elif trans_config['aug_type'] == 'yolov5':
