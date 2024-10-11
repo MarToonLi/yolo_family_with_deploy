@@ -72,7 +72,7 @@ class ConvertColor(object):
             raise NotImplementedError
         return image, boxes, labels
 
-
+#! ReSiaze: 将图像和标签坐标进行同步resize
 class Resize(object):
     def __init__(self, img_size=640):
         self.img_size = img_size
@@ -88,6 +88,7 @@ class Resize(object):
 
         return image, boxes, labels
 
+#! 随机饱和度调整；1. image必须是HSV类型，进队S通道进行调整; 2. 随机体现在，一张图像是否进行调整，饱和度调整的幅度随机；
 # 未使用
 class RandomSaturation(object):
     def __init__(self, lower=0.5, upper=1.5):
@@ -98,10 +99,12 @@ class RandomSaturation(object):
 
     def __call__(self, image, boxes=None, labels=None):
         if random.randint(2):
-            image[:, :, 1] *= random.uniform(self.lower, self.upper)   # 如果超过255咋整
+            image[:, :, 1] *= random.uniform(self.lower, self.upper)   #? 如果超过255咋整? 
+            #! 为什么限于G通道的饱和度: 1. 简化实现；2. 满足特定任务需求（特定任务对绿色比较敏感）
 
         return image, boxes, labels
 
+#! 随机色调调整: image必须是HSV类型，进队H通道进行调整
 # 未使用
 class RandomHue(object):
     def __init__(self, delta=18.0):
@@ -111,10 +114,11 @@ class RandomHue(object):
     def __call__(self, image, boxes=None, labels=None):
         if random.randint(2):
             image[:, :, 0] += random.uniform(-self.delta, self.delta)
-            image[:, :, 0][image[:, :, 0] > 360.0] -= 360.0
-            image[:, :, 0][image[:, :, 0] < 0.0] += 360.0
+            image[:, :, 0][image[:, :, 0] > 360.0] -= 360.0  # 保持H通道在有效范围
+            image[:, :, 0][image[:, :, 0] < 0.0] += 360.0    # 保持H通道在有效范围
         return image, boxes, labels
 
+#! 随机亮度噪音: 竟然是从通道随机交换实现的
 # 未使用
 class RandomLightingNoise(object):
     def __init__(self):
@@ -129,6 +133,7 @@ class RandomLightingNoise(object):
             image = shuffle(image)
         return image, boxes, labels
 
+#! 随机对比度调整: 竟然是全通道像素值在0.5和1.5的比例之间调整
 # 未使用
 class RandomContrast(object):
     def __init__(self, lower=0.5, upper=1.5):
@@ -144,6 +149,7 @@ class RandomContrast(object):
             image *= alpha
         return image, boxes, labels
 
+#! 随机亮度调整: 竟然也是在全通道像素值上进行加运算调整；
 # 未使用
 class RandomBrightness(object):
     def __init__(self, delta=32):
@@ -157,7 +163,7 @@ class RandomBrightness(object):
             image += delta
         return image, boxes, labels
 
-
+#! 随机裁剪: 1. 随机体现在图像宽高；同步变化的是GT框的数目和bbox坐标；2. 宽高的随机被两个条件限制: 1) 0.5w < h < 2w 2) 裁剪区域与M个GT框的IOU值中的最小值。
 class RandomSampleCrop(object):
     """Crop
     Arguments:
@@ -192,7 +198,7 @@ class RandomSampleCrop(object):
 
         while True:
             # randomly choose a mode
-            sample_id = np.random.randint(len(self.sample_options))
+            sample_id = np.random.randint(len(self.sample_options))  
             mode = self.sample_options[sample_id]
             if mode is None:
                 return image, boxes, labels
@@ -210,6 +216,7 @@ class RandomSampleCrop(object):
                 w = random.uniform(0.3 * width, width)
                 h = random.uniform(0.3 * height, height)
 
+                #! [condition1] 0.5w < h < 2w
                 # aspect ratio constraint b/t .5 & 2
                 if h / w < 0.5 or h / w > 2:
                     continue
@@ -223,10 +230,12 @@ class RandomSampleCrop(object):
                 # calculate IoU (jaccard overlap) b/t the cropped and gt boxes
                 overlap = jaccard_numpy(boxes, rect)
 
+                #! [condition2] boxes(num_boxes, 4); 一般仅对min_iou有限制，对max_iou没有限制；
                 # is min and max overlap constraint satisfied? if not try again
                 if overlap.min() < min_iou and max_iou < overlap.max():
                     continue
-
+                
+                #! 如何具体的裁剪
                 # cut the crop from the image
                 current_image = current_image[rect[1]:rect[3], rect[0]:rect[2],
                                               :]
@@ -266,9 +275,9 @@ class RandomSampleCrop(object):
 
                 return current_image, current_boxes, current_labels
 
-
+#! 随机膨胀调整: 图像宽高按比例调整，原图像处于图像右下角。
 class Expand(object):
-    def __call__(self, image, boxes, labels):
+    def __call__(self, image, boxes, labels = None):
         if random.randint(2):
             return image, boxes, labels
 
@@ -290,14 +299,14 @@ class Expand(object):
 
         return image, boxes, labels
 
-
+#! 随机水平翻转调整: 图像和标签同步修改，利用切片快速实现
 class RandomHorizontalFlip(object):
     def __call__(self, image, boxes, classes):
         _, width, _ = image.shape
         if random.randint(2):
             image = image[:, ::-1]
             boxes = boxes.copy()
-            boxes[:, 0::2] = width - boxes[:, 2::-2]
+            boxes[:, 0::2] = width - boxes[:, 2::-2]  #! 0(x1) 2(x2)
         return image, boxes, classes
 
 # 未使用
@@ -326,6 +335,7 @@ class SwapChannels(object):
         image = image[:, :, self.swaps]
         return image
 
+#! 图像光学畸变: 一些图像增强方法的组合
 # 未使用
 class PhotometricDistort(object):
     def __init__(self):
@@ -351,17 +361,18 @@ class PhotometricDistort(object):
 
 
 # ----------------------- Main Functions -----------------------
+##! Augmentation --> tensor
 ## SSD-style Augmentation
 class SSDAugmentation(object):
     def __init__(self, img_size=640):
         self.img_size = img_size
         self.augment = Compose([
-            ConvertFromInts(),                         # 将int类型转换为float32类型
+            ConvertFromInts(),                         #! 将int类型转换为float32类型 (必须最前)
             PhotometricDistort(),                      # 图像颜色增强
             Expand(),                                  # 扩充增强
             RandomSampleCrop(),                        # 随机剪裁
             RandomHorizontalFlip(),                    # 随机水平翻转
-            Resize(self.img_size)                      # resize操作
+            Resize(self.img_size)                      #! resize操作 (必须最后)
         ])
 
     def __call__(self, image, target, mosaic=False):
@@ -376,11 +387,11 @@ class SSDAugmentation(object):
         img_tensor = torch.from_numpy(image).permute(2, 0, 1).contiguous().float()
         target['boxes'] = torch.from_numpy(boxes).float()
         target['labels'] = torch.from_numpy(labels).float()
-        
 
         return img_tensor, target, deltas
     
-
+    
+##! resize --> tensor
 ## SSD-style valTransform
 class SSDBaseTransform(object):                            
     def __init__(self, img_size):
@@ -421,6 +432,7 @@ class SSDBaseTransform(object):
             callable_instance = CallableClass("Alice")
             # 调用对象，就像调用函数一样
             result = callable_instance("Hello")
-        
+        3. 所有的数据增强方法都不会对超过255的值和小于0的值进行处理；
+        4. HSV各通道的取值范围: 0~360; 0~1.0; 0~1.0
         
         """
