@@ -7,25 +7,26 @@ class Yolov5Matcher(object):
         self.num_classes = num_classes
         self.num_anchors = num_anchors
         self.anchor_theshold = anchor_theshold
-        # [KA, 2]
+        # [KA, 2] : wh
         self.anchor_sizes = np.array([[anchor[0], anchor[1]]
                                       for anchor in anchor_size])
-        # [KA, 4]
+        # [KA, 4] : xywh
         self.anchor_boxes = np.array([[0., 0., anchor[0], anchor[1]]
-                                      for anchor in anchor_size])
+                                      for anchor in anchor_size])     # anchor_size == 9 (default)
 
     def compute_iou(self, anchor_boxes, gt_box):
         """
             anchor_boxes : ndarray -> [KA, 4] (cx, cy, bw, bh).
             gt_box : ndarray -> [1, 4] (cx, cy, bw, bh).
         """
-        # anchors: [KA, 4]
+        
+        # anchors: [KA, 4] (xywh->xyxy)
         anchors = np.zeros_like(anchor_boxes)
         anchors[..., :2] = anchor_boxes[..., :2] - anchor_boxes[..., 2:] * 0.5  # x1y1
         anchors[..., 2:] = anchor_boxes[..., :2] + anchor_boxes[..., 2:] * 0.5  # x2y2
         anchors_area = anchor_boxes[..., 2] * anchor_boxes[..., 3]
         
-        # gt_box: [1, 4] -> [KA, 4]
+        # gt_box: [1, 4] -> [KA, 4] (xywh->xyxy)
         gt_box = np.array(gt_box).reshape(-1, 4)
         gt_box = np.repeat(gt_box, anchors.shape[0], axis=0)
         gt_box_ = np.zeros_like(gt_box)
@@ -51,16 +52,26 @@ class Yolov5Matcher(object):
 
 
     def iou_assignment(self, ctr_points, gt_box, fpn_strides):
+        """面向单个的gt_box，ctr_points是
+
+        Args:
+            ctr_points (_type_): _description_
+            gt_box (_type_): _description_
+            fpn_strides (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         # compute IoU
         iou = self.compute_iou(self.anchor_boxes, gt_box)
-        iou_mask = (iou > 0.5)
+        iou_mask = (iou > 0.5)                                  #! 筛选: 筛选出与gt_box(单个)重叠度较高的预测框
 
         label_assignment_results = []
         if iou_mask.sum() == 0:
             # We assign the anchor box with highest IoU score.
-            iou_ind = np.argmax(iou)
+            iou_ind = np.argmax(iou)                            #? 一定是9个预测框
 
-            level = iou_ind // self.num_anchors              # pyramid level
+            level = iou_ind // self.num_anchors              # pyramid level: 每个fm的anchors数目是3个，根据余数可以判断使用的是每个fmp中3个anchor中的哪一个。
             anchor_idx = iou_ind - level * self.num_anchors  # anchor index
 
             # get the corresponding stride
@@ -70,7 +81,7 @@ class Yolov5Matcher(object):
             xc, yc = ctr_points
             xc_s = xc / stride
             yc_s = yc / stride
-            grid_x = int(xc_s)
+            grid_x = int(xc_s)    # 当前预测框中心点在当前level的fm中的坐标
             grid_y = int(yc_s)
 
             label_assignment_results.append([grid_x, grid_y, xc_s, yc_s, level, anchor_idx])

@@ -125,7 +125,7 @@ class ComputeLoss:
         tcls, tbox, indices, anchors = self.build_targets(p, targets)  # targets
 
         # Losses
-        for i, pi in enumerate(p):  # layer index, layer predictions
+        for i, pi in enumerate(p):     # layer index, layer predictions
             b, a, gj, gi = indices[i]  # image, anchor, gridy, gridx
             tobj = torch.zeros(pi.shape[:4], dtype=pi.dtype, device=self.device)  # target obj
 
@@ -175,12 +175,27 @@ class ComputeLoss:
         return (lbox + lobj + lcls) * bs, torch.cat((lbox, lobj, lcls)).detach()
 
     def build_targets(self, p, targets):
-        # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
-        na, nt = self.na, targets.shape[0]  # number of anchors, targets
-        tcls, tbox, indices, anch = [], [], [], []
-        gain = torch.ones(7, device=self.device)  # normalized to gridspace gain
-        ai = torch.arange(na, device=self.device).float().view(na, 1).repeat(1, nt)  # same as .repeat_interleave(nt)
-        targets = torch.cat((targets.repeat(na, 1, 1), ai[..., None]), 2)  # append anchor indices
+        """为所有的GT选择相应的anchor正样本
+        筛选条件：GT和anchor的宽比和高比，大于一定阈值的就是负样本，反之为正样本
+        而筛选得到的tcls, tbox, indices, anch信息将传入call函数，筛选出pred中每个grid预测得到的信息，获取对应gridcell上的正样本。
+
+        Args:
+            p (_type_): p is output of model, list of 3 layers; [22, 3, 80, 80, 10]; [22, 3, 40, 40, 10]; [22, 3, 20, 20, 10]; 
+            targets (_type_): targets is normalized label, targets.shape = (nt, 7)
+
+        Returns:
+            tcls: target所属的class_index;
+            tbox: (xywh), 其中xy是这个target对当前grid_cell左上角的偏移量;
+            indices: b, target所属的image_index; a: 使用的anchor_index; gj: 这个网格的左上角y坐标; gi: 表示这个网格的左上角x坐标;
+            anch: target所使用anchor的尺度, 注意可能一个target会使用大小不同anchor进行计算
+        """
+        # Build targets for compute_loss(), input targets(image_index,class,x,y,w,h)
+        na, nt = self.na, targets.shape[0]          # number of anchors(3), number of targets [72, 6] --> na = 3, nt = 72
+        tcls, tbox, indices, anch = [], [], [], []  #? 
+        gain = torch.ones(7, device=self.device)    #! 负责将归一化的XYXY值的尺度从01尺度转换到feature map的宽高尺度；
+        # ai is matrix: [[0,0,...,0], [1,1,...,1], [2,2,...,2]], ai.shape = (na, nt) #? ai meaning anchor_index, 元素取值范围是(0,1,2);
+        ai = torch.arange(na, device=self.device).float().view(na, 1).repeat(1, nt)  # same as .repeat_interleave(nt)   #! [3, 72]      
+        targets = torch.cat((targets.repeat(na, 1, 1), ai[..., None]), 2)            # append anchor indices            #! [3, 72, 7]    #! repeat: tensor在各个维度的重复次数
 
         g = 0.5  # bias
         off = torch.tensor(
@@ -194,21 +209,27 @@ class ComputeLoss:
             ],
             device=self.device).float() * g  # offsets
 
-        for i in range(self.nl):
-            anchors, shape = self.anchors[i], p[i].shape
-            gain[2:6] = torch.tensor(shape)[[3, 2, 3, 2]]  # xyxy gain
 
-            # Match targets to anchors
-            t = targets * gain  # shape(3,n,7)
+        # 接下来indices保存每层targets对应的图片索引，对应的anchor索引（只有3个），以及中心点坐标。
+        # 接下来计算损失的时候，要根据targets对应的anchor索引来选择在某个具体位置的anchors,用来回归。
+        for i in range(self.nl):  # number of layers
+            anchors, shape = self.anchors[i], p[i].shape   # self.anchors [3, 3, 2]
+            gain[2:6] = torch.tensor(shape)[[3, 2, 3, 2]]  # xyxy gain                    #! torch.tensor(shape)得到torch类型的列表；2,3索引指的是HW； 
+            # if shape == [22, 3, 80, 80, 10]; gain = [1, 1, 80, 80, 80, 80, 1];  
+            
+
+            # Match targets to anchors          #!!! targets
+            t = targets * gain  # shape(3,n,7)  #! 将target中的xywh的归一化尺度放缩到相对当前feature map的坐标尺度  #!!! label.txt文件中回归标签都是归一化值；
             if nt:
                 # Matches
-                r = t[..., 4:6] / anchors[:, None]  # wh ratio
-                j = torch.max(r, 1 / r).max(2)[0] < self.hyp['anchor_t']  # compare
+                r = t[..., 4:6] / anchors[:, None]  # wh ratio  #? [3,1,2] 为什么不是[3,2,1]         #! 各GT真实框与各个anchor的比例值, 作为过滤条件
+                j = torch.max(r, 1 / r).max(2)[0] < self.hyp['anchor_t']  # compare  #! 小于阈值的被留下
+                # tensor.max(dim): 指定维度上张量的最大值 第一项是values，第二项是indices；[3, 72]
                 # j = wh_iou(anchors, t[:, 4:6]) > model.hyp['iou_t']  # iou(3,n)=wh_iou(anchors(3,2), gwh(n,2))
-                t = t[j]  # filter
+                t = t[j]  # filter    j[3, 72] --> t[150, 7];  #? 如何变得平坦的呢？—— bool索引筛选后，会实现降维！
 
                 # Offsets
-                gxy = t[:, 2:4]  # grid xy
+                gxy = t[:, 2:4]      # grid xy
                 gxi = gain[[2, 3]] - gxy  # inverse
                 j, k = ((gxy % 1 < g) & (gxy > 1)).T
                 l, m = ((gxi % 1 < g) & (gxi > 1)).T
@@ -220,7 +241,7 @@ class ComputeLoss:
                 offsets = 0
 
             # Define
-            bc, gxy, gwh, a = t.chunk(4, 1)  # (image, class), grid xy, grid wh, anchors
+            bc, gxy, gwh, a = t.chunk(4, 1)  # (image, class), grid xy, grid wh, anchors  #! chunk沿某个维度均匀切分成N份；t [68, 2];
             a, (b, c) = a.long().view(-1), bc.long().T  # anchors, image, class
             gij = (gxy - offsets).long()
             gi, gj = gij.T  # grid indices
@@ -228,7 +249,7 @@ class ComputeLoss:
             # Append
             indices.append((b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1)))  # image, anchor, grid
             tbox.append(torch.cat((gxy - gij, gwh), 1))  # box
-            anch.append(anchors[a])  # anchors
-            tcls.append(c)  # class
+            anch.append(anchors[a])  # anchors: 
+            tcls.append(c)           # class
 
         return tcls, tbox, indices, anch

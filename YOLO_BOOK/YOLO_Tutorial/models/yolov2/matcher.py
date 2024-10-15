@@ -9,6 +9,8 @@ class Yolov2Matcher(object):
         # anchor box
         self.num_anchors = len(anchor_size)
         self.anchor_size = anchor_size
+        
+        #! 样本匹配的参与者只有anchor_size和真实标签targets(中心点和尺寸)，与模型的输出无关！！！！
         self.anchor_boxes = np.array(
             [[0., 0., anchor[0], anchor[1]]
             for anchor in anchor_size]
@@ -73,7 +75,7 @@ class Yolov2Matcher(object):
             # [N,]
             tgt_cls = targets_per_image["labels"].numpy()
             # [N, 4]
-            tgt_box = targets_per_image['boxes'].numpy()
+            tgt_box = targets_per_image['boxes'].numpy()      
 
             # 第二层for循环遍历该张图像的每一个目标的标签
             for gt_box, gt_label in zip(tgt_box, tgt_cls):
@@ -83,7 +85,7 @@ class Yolov2Matcher(object):
                 # 计算目标框的中心点坐标和宽高
                 xc, yc = (x2 + x1) * 0.5, (y2 + y1) * 0.5
                 bw, bh = x2 - x1, y2 - y1
-                gt_box = [0, 0, bw, bh]
+                gt_box = [0, 0, bw, bh]                      #! 目标框
 
                 # 检查该目标边界框是否有效
                 if bw < 1. or bh < 1.:
@@ -110,7 +112,7 @@ class Yolov2Matcher(object):
                     grid_y = int(yc_s)
 
                     # 保存正样本的网格坐标，和对应的先验框的索引
-                    label_assignment_results.append([grid_x, grid_y, anchor_idx])
+                    label_assignment_results.append([grid_x, grid_y, anchor_idx])     #? anchor_idx 被记录的意义是？对应A中哪个！
                 else:
                     # 情况2&3，至少有一个先验框和目标框的IoU大于给定的阈值
                     for iou_ind, iou_m in enumerate(iou_mask):
@@ -127,7 +129,7 @@ class Yolov2Matcher(object):
                             # # 保存正样本的网格坐标，和对应的先验框的索引
                             label_assignment_results.append([grid_x, grid_y, anchor_idx])
 
-                # 依据上述的先验框的标记，开始标记正样本的位置
+                # 依据上述的先验框的标记，开始标记正样本的位置:  #! 位置是在HWA三维空间中的位置！
                 for result in label_assignment_results:
                     grid_x, grid_y, anchor_idx = result
                     if grid_x < fmp_w and grid_y < fmp_h:
@@ -151,3 +153,18 @@ class Yolov2Matcher(object):
         gt_bboxes = torch.from_numpy(gt_bboxes).float()
 
         return gt_objectness, gt_classes, gt_bboxes
+
+
+        """
+        每个网格只输出一个边界框，每个网格有5个先验框，意味着会输出5个预测框，需要确定哪几个预测框是正样本，哪几个是负样本；
+        
+        官方是在预测框层面区分正负样本，而作者认为可以从先验框层面做这件事
+        
+        哪些预测框会参与何种损失的计算完全由它对应的先验框决定。
+        
+        gt_box被视为目标框。
+        而A个先验框会与目标框进行IOU计算，根据IOU与阈值的大小结果，A个先验框会被分配为不同的处理方式；
+        
+        
+        
+        """
