@@ -194,7 +194,7 @@ class DetectionModel(BaseModel):
             forward = lambda x: self.forward(x)[0] if isinstance(m, Segment) else self.forward(x)
             m.stride = torch.tensor([s / x.shape[-2] for x in forward(torch.zeros(1, ch, s, s))])  # forward
             check_anchor_order(m)
-            m.anchors /= m.stride.view(-1, 1, 1)
+            m.anchors /= m.stride.view(-1, 1, 1)   #! m.anchors
             self.stride = m.stride
             self._initialize_biases()  # only run once
 

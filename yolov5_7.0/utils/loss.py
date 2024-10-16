@@ -132,7 +132,7 @@ class ComputeLoss:
             n = b.shape[0]  # number of targets
             if n:
                 # pxy, pwh, _, pcls = pi[b, a, gj, gi].tensor_split((2, 4, 5), dim=1)  # faster, requires torch 1.8.0
-                pxy, pwh, _, pcls = pi[b, a, gj, gi].split((2, 2, 1, self.nc), 1)  # target-subset of predictions
+                pxy, pwh, _, pcls = pi[b, a, gj, gi].split((2, 2, 1, self.nc), 1)  #! target-subset of predictions, corresponding to the positive samples.
 
                 # Regression
                 pxy = pxy.sigmoid() * 2 - 0.5
@@ -148,7 +148,7 @@ class ComputeLoss:
                     b, a, gj, gi, iou = b[j], a[j], gj[j], gi[j], iou[j]
                 if self.gr < 1:
                     iou = (1.0 - self.gr) + self.gr * iou
-                tobj[b, a, gj, gi] = iou  # iou ratio
+                tobj[b, a, gj, gi] = iou  # iou ratio      #! 真实框的物体存在置信度(标签)是IOU值!
 
                 # Classification
                 if self.nc > 1:  # cls loss (only if multiple classes)
@@ -175,25 +175,37 @@ class ComputeLoss:
         return (lbox + lobj + lcls) * bs, torch.cat((lbox, lobj, lcls)).detach()
 
     def build_targets(self, p, targets):
-        """为所有的GT选择相应的anchor正样本
-        筛选条件：GT和anchor的宽比和高比，大于一定阈值的就是负样本，反之为正样本
-        而筛选得到的tcls, tbox, indices, anch信息将传入call函数，筛选出pred中每个grid预测得到的信息，获取对应gridcell上的正样本。
+        """
+        Summary: 为所有的GT选择相应的anchor正样本
+                筛选条件：GT和anchor的宽比和高比，大于一定阈值的就是负样本，反之为正样本; 
+                #! 指标宽比和高比的计算不需要真实框的中心点数据和模型的预测框数据，只需要真实框的宽高和先验框的宽高。
+                而筛选得到的tcls, tbox, indices, anch信息将传入call函数，根据indices筛选出pred中每个grid预测得到的信息，获取对应gridcell上的正样本。
+        Following Comments's assumption:
+            当前batch的图像中的目标实例有72个，其他配置是yolov5的基本配置
 
         Args:
-            p (_type_): p is output of model, list of 3 layers; [22, 3, 80, 80, 10]; [22, 3, 40, 40, 10]; [22, 3, 20, 20, 10]; 
-            targets (_type_): targets is normalized label, targets.shape = (nt, 7)
+            p (list<torch.Tensor>): p is output of model (train), list of 3 layers; this func uses p's each layer's shape (fm's w and h) to build gain;
+                [22, 3, 80, 80, 10]; 
+                [22, 3, 40, 40, 10]; 
+                [22, 3, 20, 20, 10]; 
+            targets (torch.Tensor) -> [nt, 7]: targets is normalized label (image_index, class, x, y, w, h);
+                                                targets: [72, 6] -> [72, 7] -> [3, 72, 7] -> t[X1, 7] -> t[5*X1, 7] -> t[X2, 7]
 
-        Returns:
-            tcls: target所属的class_index;
-            tbox: (xywh), 其中xy是这个target对当前grid_cell左上角的偏移量;
-            indices: b, target所属的image_index; a: 使用的anchor_index; gj: 这个网格的左上角y坐标; gi: 表示这个网格的左上角x坐标;
-            anch: target所使用anchor的尺度, 注意可能一个target会使用大小不同anchor进行计算
+        Returns: (四个列表包含nl个张量元素)
+            tcls    -> list<torch.Tensor[M, 1]>[3]: 各正样本anchor对应真实框的class_index;
+            tbox    -> list<torch.Tensor[M, 4]>[3]: wywh 各样本anchor对应真实框的box;
+                                                    其中 1. xy是这个target对当前grid_cell左上角的偏移量; 2. xywh的单位尺度不是01而是anchor所属的金字塔level的特征图尺度
+            indices -> list<torch.Tensor[M, 1]>[3]: b: 各正样本anchor对应真实框所属图像的image_index; 
+                                                    a: 使用的anchor_index; 
+                                                    gj: 这个网格的左上角y坐标; 
+                                                    gi: 表示这个网格的左上角x坐标;
+            anch    -> list<torch.Tensor[M, 2]>[3]: 各正样本anchor尺寸(原始尺寸除以对应特征图层的步长);
         """
-        # Build targets for compute_loss(), input targets(image_index,class,x,y,w,h)
-        na, nt = self.na, targets.shape[0]          # number of anchors(3), number of targets [72, 6] --> na = 3, nt = 72
-        tcls, tbox, indices, anch = [], [], [], []  #? 
+        # Build targets for compute_loss(), input targets(image_index, class, x, y, w, h)
+        na, nt = self.na, targets.shape[0]          # number of anchors, number of targets [X, 6] (e.g. na = 3, nt = 72)
+        tcls, tbox, indices, anch = [], [], [], []  
         gain = torch.ones(7, device=self.device)    #! 负责将归一化的XYXY值的尺度从01尺度转换到feature map的宽高尺度；
-        # ai is matrix: [[0,0,...,0], [1,1,...,1], [2,2,...,2]], ai.shape = (na, nt) #? ai meaning anchor_index, 元素取值范围是(0,1,2);
+        # ai is matrix: [[0,0,...,0], [1,1,...,1], [2,2,...,2]], ai.shape = (na, nt) # ai means anchor_index, 元素取值范围是(0,1,2);
         ai = torch.arange(na, device=self.device).float().view(na, 1).repeat(1, nt)  # same as .repeat_interleave(nt)   #! [3, 72]      
         targets = torch.cat((targets.repeat(na, 1, 1), ai[..., None]), 2)            # append anchor indices            #! [3, 72, 7]    #! repeat: tensor在各个维度的重复次数
 
@@ -207,49 +219,60 @@ class ComputeLoss:
                 [0, -1],  # j,k,l,m
                 # [1, 1], [1, -1], [-1, 1], [-1, -1],  # jk,jm,lk,lm
             ],
-            device=self.device).float() * g  # offsets
+            device=self.device).float() * g  # offsets  #TODO (超级参数) 这里能够控制考虑周围区域多大的范围
 
 
-        # 接下来indices保存每层targets对应的图片索引，对应的anchor索引（只有3个），以及中心点坐标。
-        # 接下来计算损失的时候，要根据targets对应的anchor索引来选择在某个具体位置的anchors,用来回归。
         for i in range(self.nl):  # number of layers
-            anchors, shape = self.anchors[i], p[i].shape   # self.anchors [3, 3, 2]
-            gain[2:6] = torch.tensor(shape)[[3, 2, 3, 2]]  # xyxy gain                    #! torch.tensor(shape)得到torch类型的列表；2,3索引指的是HW； 
-            # if shape == [22, 3, 80, 80, 10]; gain = [1, 1, 80, 80, 80, 80, 1];  
+            anchors, shape = self.anchors[i], p[i].shape    # self.anchors [3, 3, 2]       #! self.anchors: 是model.yaml中尺寸宽高除以特征图的尺度(8/16/32), 该操作在DetectionModel中
+            gain[2:6] = torch.tensor(shape)[[3, 2, 3, 2]]   # xyxy gain                    #! torch.tensor(shape)得到torch类型的列表；2,3索引指的是HW； 
+                                                            # e.g. if shape == [22, 3, 80, 80, 10]; gain = [1, 1, 80, 80, 80, 80, 1];  
             
 
             # Match targets to anchors          #!!! targets
             t = targets * gain  # shape(3,n,7)  #! 将target中的xywh的归一化尺度放缩到相对当前feature map的坐标尺度  #!!! label.txt文件中回归标签都是归一化值；
             if nt:
+                #! S: 过滤掉的是每一特征层下，相对于真实框过长或者过高的anchor；
+                # 这一步骤是不局限于真实框所在网格位置的！
                 # Matches
-                r = t[..., 4:6] / anchors[:, None]  # wh ratio  #? [3,1,2] 为什么不是[3,2,1]         #! 各GT真实框与各个anchor的比例值, 作为过滤条件
-                j = torch.max(r, 1 / r).max(2)[0] < self.hyp['anchor_t']  # compare  #! 小于阈值的被留下
-                # tensor.max(dim): 指定维度上张量的最大值 第一项是values，第二项是indices；[3, 72]
+                r = t[..., 4:6] / anchors[:, None]                          # wh ratio   # [3, 72, 2] / [3,1,2] --> [3, 72, 2] 
+                                                                            #! 各GT真实框与各个anchor的比例值, 作为过滤条件; #! t[4:6]和anchors的值都是在对应特征图的尺度上！
+                j = torch.max(r, 1 / r).max(2)[0] < self.hyp['anchor_t']    # compare  #! 小于阈值的被留下; anchor_t默认是4;
+                                                                            # 筛选出宽比w1/w2 w2/w1 高比h1/h2 h2/h1中最大的那个
+                                                                            # tensor.max(dim): 指定维度上张量的最大值 第一项是values，第二项是indices；[3, 72]
                 # j = wh_iou(anchors, t[:, 4:6]) > model.hyp['iou_t']  # iou(3,n)=wh_iou(anchors(3,2), gwh(n,2))
-                t = t[j]  # filter    j[3, 72] --> t[150, 7];  #? 如何变得平坦的呢？—— bool索引筛选后，会实现降维！
+                t = t[j]                                                    # filter    j[3, 72] --> t[150, 7];  #? 如何变得平坦的呢？—— bool索引筛选后，会实现降维！
 
+                #! S: 从周围的十字范围内选择最可能的两个anchor网格作为正样本，因为GT中心点的附近cnchor也可能存在高质量的预测框
                 # Offsets
-                gxy = t[:, 2:4]      # grid xy
-                gxi = gain[[2, 3]] - gxy  # inverse
-                j, k = ((gxy % 1 < g) & (gxy > 1)).T
-                l, m = ((gxi % 1 < g) & (gxi > 1)).T
-                j = torch.stack((torch.ones_like(j), j, k, l, m))
-                t = t.repeat((5, 1, 1))[j]
-                offsets = (torch.zeros_like(gxy)[None] + off[:, None])[j]
+                gxy = t[:, 2:4]           # grid xy  [150, 2]                     左上角为中心
+                gxi = gain[[2, 3]] - gxy  # inverse  [2] - [150, 2] --> [150, 2]
+                j, k = ((gxy % 1 < g) & (gxy > 1)).T   # [150, 2] --> [2, 150] --> [150], [150];  
+                l, m = ((gxi % 1 < g) & (gxi > 1)).T   # [150, 2] --> [2, 150] --> [150], [150];
+                j = torch.stack((torch.ones_like(j), j, k, l, m))   # 5 * [150] --> [5, 150];
+                t = t.repeat((5, 1, 1))[j]   # t.repeat((5, 1, 1)): [150, 7] --> [5, 150, 7] --> [449, 7]  #! [j] 会引起张量降低维度
+                offsets = (torch.zeros_like(gxy)[None] + off[:, None])[j]  # torch.zeros_like(gxy)[None]: [1, 150, 2]; off[:, None]: [5, 1, 2]
+                # (torch.zeros_like(gxy)[None] + off[:, None]): [5, 150, 2]; --> offsets: [449, 2]: 我最多懂它能实现什么效果，但是为什么这样编写可以导致这样的结果以及变通我是不懂的；
             else:
                 t = targets[0]
                 offsets = 0
 
             # Define
-            bc, gxy, gwh, a = t.chunk(4, 1)  # (image, class), grid xy, grid wh, anchors  #! chunk沿某个维度均匀切分成N份；t [68, 2];
-            a, (b, c) = a.long().view(-1), bc.long().T  # anchors, image, class
+            bc, gxy, gwh, a = t.chunk(4, 1)             # (image, class), grid xy, grid wh, anchors  #! chunk沿某个维度均匀切分成N份；t [68, 2];
+            a, (b, c) = a.long().view(-1), bc.long().T  # anchor(取值为0,1,2), image, class
             gij = (gxy - offsets).long()
             gi, gj = gij.T  # grid indices
 
             # Append
-            indices.append((b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1)))  # image, anchor, grid
+            indices.append((b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1)))  # image_id, anchor_id, grid
             tbox.append(torch.cat((gxy - gij, gwh), 1))  # box
             anch.append(anchors[a])  # anchors: 
             tcls.append(c)           # class
 
         return tcls, tbox, indices, anch
+
+"""
+1. 所谓的正样本和负样本是针对anchor_id的；
+2. 正样本和负样本所构成的集合是[3, 72, 7], 而不是[72, 7];
+3. yolov5中正样本的class和box是多少就是多少，但是正样本的物体存在置信度是根据p和t在当前网格的iou值而定的；
+4. 损失函数计算时，回归损失和分类损失只考虑正样本，而存在置信度的损失是考虑正负样本，其中负样本就是特征图中除了正样本所在网格以外的其他网格。
+"""
