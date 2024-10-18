@@ -236,8 +236,8 @@ class ModelEMA(object):
         d = self.decay(self.updates)
 
         msd = self.de_parallel(model).state_dict()  # model state_dict
-        for k, v in self.ema.state_dict().items():
-            if v.dtype.is_floating_point:  # true for FP16 and FP32
+        for k, v in self.ema.state_dict().items():  #! 由于是字典类型，因此对键值对的修改是原地修改！
+            if v.dtype.is_floating_point:           # true for FP16 and FP32
                 v *= d
                 v += (1 - d) * msd[k].detach()
         # assert v.dtype == msd[k].dtype == torch.float32, f'{k}: EMA {v.dtype} and model {msd[k].dtype} must be FP32'

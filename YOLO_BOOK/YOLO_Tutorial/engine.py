@@ -314,6 +314,9 @@ class Yolov8Trainer(object):
         # 学习率更新
         self.lr_scheduler.step()
         
+        #! 应该加上ema对模型的更新(自己加的)
+        self.model_ema.update_attr(model, include=['yaml', 'nc', 'hyp', 'names', 'stride', 'class_weights'])
+        
     # 训练的第二阶段
     def check_second_stage(self):
         # 在第二阶段，关闭Mosaic和Mixup两个强大的数据增强
@@ -378,6 +381,7 @@ class Yolov8Trainer(object):
     def rescale_image_targets(self, images, targets, stride, min_box_size, multi_scale_range=[0.5, 1.5]):
         """
             Deployed for Multi scale trick.
+            images: [B, C, H, W]
         """
         if isinstance(stride, int):
             max_stride = stride
@@ -386,8 +390,8 @@ class Yolov8Trainer(object):
 
         # 随机选择一个新的图像尺寸
         old_img_size = images.shape[-1]
-        new_img_size = random.randrange(old_img_size * multi_scale_range[0], old_img_size * multi_scale_range[1] + max_stride)
-        new_img_size = new_img_size // max_stride * max_stride  # size
+        new_img_size = random.randrange(old_img_size * multi_scale_range[0], old_img_size * multi_scale_range[1] + max_stride)  # 640 --> [320, 960 + 32]
+        new_img_size = new_img_size // max_stride * max_stride      # size
         
         # 如果新的图像尺寸不等于当前的图像尺寸，则将其调整为新的图像尺寸
         # 注意，这里我们一次性将一批数据中的所有图像都调整为新的尺寸

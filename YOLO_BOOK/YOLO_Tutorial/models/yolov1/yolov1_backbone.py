@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
-
+import torchvision.models as models
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
            'resnet152']
@@ -119,7 +119,7 @@ class ResNet(nn.Module):
 
         # Zero-initialize the last BN in each residual branch,
         # so that the residual branch starts with zeros, and each residual block behaves like an identity.
-        # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
+        # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677  #! big trick
         if zero_init_residual:
             for m in self.modules():
                 if isinstance(m, Bottleneck):
@@ -143,14 +143,14 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x):    #! 与torch版的网络层名称是一致的，知识去除了全局平均池化层和flatten和fc三个后续操作;
         """
         Input:
             x: (Tensor) -> [B, C, H, W]
         Output:
             c5: (Tensor) -> [B, C, H/32, W/32]
         """
-        c1 = self.conv1(x)     # [B, C, H/2, W/2]
+        c1 = self.conv1(x)     # [B, C, H/2, W/2]     #! 
         c1 = self.bn1(c1)      # [B, C, H/2, W/2]
         c1 = self.relu(c1)     # [B, C, H/2, W/2]
         c2 = self.maxpool(c1)  # [B, C, H/4, W/4]

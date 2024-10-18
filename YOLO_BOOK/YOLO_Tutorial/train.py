@@ -81,7 +81,7 @@ def parse_args():
                         help='load data into memory.')
     
     # Train trick
-    parser.add_argument('-ms', '--multi_scale', action='store_true', default=False,
+    parser.add_argument('-ms', '--multi_scale', action='store_true', default=True,
                         help='Multi scale')
     parser.add_argument('--ema', action='store_true', default=False,
                         help='Model EMA')

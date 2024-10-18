@@ -36,7 +36,7 @@ def random_perspective(image,
     P[2, 0] = random.uniform(-perspective, perspective)  # x perspective (about y)
     P[2, 1] = random.uniform(-perspective, perspective)  # y perspective (about x)
 
-    # Rotation and Scale: 旋转和缩放
+    # Rotation and Scale: 
     R = np.eye(3)
     a = random.uniform(-degrees, degrees)     # 随机生成旋转角度
     # a += random.choice([-180, -90, 0, 90])  # add 90deg rotations to small rotations

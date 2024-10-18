@@ -118,7 +118,7 @@ class APPPLE37Dataset(Dataset):
         
 
     def load_image_target(self, index):
-        if self.load_cache:
+        if self.load_cache:                       #! 如果使用缓存数据，则不会再调用pull_image和pull_anno函数。
             # load data from cache
             image = self.cached_images[index]
             target = self.cached_targets[index]
