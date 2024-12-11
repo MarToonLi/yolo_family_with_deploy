@@ -1,4 +1,4 @@
-# YOLO_Tutorial
+# YOLO_Tutorial 
 
 English | [简体中文](https://github.com/yjh0410/YOLO_Tutorial/blob/main/README_CN.md)
 
