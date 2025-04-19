@@ -156,6 +156,14 @@ def run(
         # Data
         data = check_dataset(data)  # check
 
+    # Prune
+    from utils.torch_utils import prune
+    prune(model, 0.3)  # 对卷积层进行非结构性剪枝操作
+    
+    
+    
+    
+    
     # Configure
     model.eval()
     cuda = device.type != 'cpu'

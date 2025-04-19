@@ -31,9 +31,9 @@ class SimOTA(object):
         strides_tensor = torch.cat([torch.ones_like(anchor_i[:, 0]) * stride_i
                                 for stride_i, anchor_i in zip(fpn_strides, anchors)], dim=-1)
         # List[F, M, 2] -> [M, 2]
-        anchors = torch.cat(anchors, dim=0)
-        num_anchor = anchors.shape[0]        
-        num_gt = len(tgt_labels)
+        anchors = torch.cat(anchors, dim=0) # [5184, 2],[1296,2],[324,2] --> [6804,2];  [4116, 2]
+        num_anchor = anchors.shape[0]     # 4116 
+        num_gt = len(tgt_labels)          # 2
 
         # ----------------------- Find inside points -----------------------
         fg_mask, is_in_boxes_and_center = self.get_in_boxes_info(
@@ -63,7 +63,7 @@ class SimOTA(object):
         cost_matrix = (
             cls_cost
             + 3.0 * reg_cost
-            + 100000.0 * (~is_in_boxes_and_center)
+            + 100000.0 * (~is_in_boxes_and_center)  #! 10的6次方，是为那些目标框以外的样本添加的！
         ) # [N, Mp]
 
         (
@@ -81,7 +81,7 @@ class SimOTA(object):
 
         return fg_mask, assigned_labels, assigned_ious, assigned_indexs
 
-
+    # 发现正样本候选区域的anchor
     def get_in_boxes_info(
         self,
         gt_bboxes,   # [N, 4]
@@ -90,28 +90,34 @@ class SimOTA(object):
         num_anchors, # M
         num_gt,      # N
         ):
+        
         # anchor center
         x_centers = anchors[:, 0]
         y_centers = anchors[:, 1]
 
         # [M,] -> [1, M] -> [N, M]
-        x_centers = x_centers.unsqueeze(0).repeat(num_gt, 1)
-        y_centers = y_centers.unsqueeze(0).repeat(num_gt, 1)
-
+        x_centers = x_centers.unsqueeze(0).repeat(num_gt, 1)  # [2, 4116]
+        y_centers = y_centers.unsqueeze(0).repeat(num_gt, 1)  # [2, 4116]
+        
+        
+        #! ======= 每个gt的left,right,top,bottom与anchor进行比较，计算anchor中心点是否在gt中，得到is_in_boxes_all(shape:[num_anchors]) ========= 
         # [N,] -> [N, 1] -> [N, M]
         gt_bboxes_l = gt_bboxes[:, 0].unsqueeze(1).repeat(1, num_anchors) # x1
         gt_bboxes_t = gt_bboxes[:, 1].unsqueeze(1).repeat(1, num_anchors) # y1
         gt_bboxes_r = gt_bboxes[:, 2].unsqueeze(1).repeat(1, num_anchors) # x2
         gt_bboxes_b = gt_bboxes[:, 3].unsqueeze(1).repeat(1, num_anchors) # y2
 
-        b_l = x_centers - gt_bboxes_l
+        b_l = x_centers - gt_bboxes_l   # 用每个anchor中心减去gt的坐标
         b_r = gt_bboxes_r - x_centers
         b_t = y_centers - gt_bboxes_t
         b_b = gt_bboxes_b - y_centers
         bbox_deltas = torch.stack([b_l, b_t, b_r, b_b], 2)
 
-        is_in_boxes = bbox_deltas.min(dim=-1).values > 0.0
+        is_in_boxes = bbox_deltas.min(dim=-1).values > 0.0   # 哪些anchor的中心点是在gt内部的
         is_in_boxes_all = is_in_boxes.sum(dim=0) > 0
+        
+        
+        # ======每个gt的cx与cy向外扩展2.5*expanded_strides距离得到left_b,right_b,top_b,bottom_b，与anchor进行比较，计算anchor中心点是否包含在left_b,right_b,top_b,bottom_b中，得到is_in_centers_all(shape:[num_anchors])
         # in fixed center
         center_radius = self.center_sampling_radius
 
@@ -121,7 +127,7 @@ class SimOTA(object):
         # [1, M]
         center_radius_ = center_radius * strides.unsqueeze(0)
 
-        gt_bboxes_l = gt_centers[:, 0].unsqueeze(1).repeat(1, num_anchors) - center_radius_ # x1
+        gt_bboxes_l = gt_centers[:, 0].unsqueeze(1).repeat(1, num_anchors) - center_radius_ # x1  
         gt_bboxes_t = gt_centers[:, 1].unsqueeze(1).repeat(1, num_anchors) - center_radius_ # y1
         gt_bboxes_r = gt_centers[:, 0].unsqueeze(1).repeat(1, num_anchors) + center_radius_ # x2
         gt_bboxes_b = gt_centers[:, 1].unsqueeze(1).repeat(1, num_anchors) + center_radius_ # y2
@@ -155,11 +161,11 @@ class SimOTA(object):
         # ---------------------------------------------------------------
         matching_matrix = torch.zeros_like(cost, dtype=torch.uint8)
 
-        ious_in_boxes_matrix = pair_wise_ious
-        n_candidate_k = min(self.topk_candidate, ious_in_boxes_matrix.size(1))
-        topk_ious, _ = torch.topk(ious_in_boxes_matrix, n_candidate_k, dim=1)
-        dynamic_ks = torch.clamp(topk_ious.sum(1).int(), min=1)
-        dynamic_ks = dynamic_ks.tolist()
+        ious_in_boxes_matrix = pair_wise_ious  # [2, 235]
+        n_candidate_k = min(self.topk_candidate, ious_in_boxes_matrix.size(1))  # 最大时10个候选框，但是如果正样本候选区域的预测框不足10个，那么需要是正样本候选区域的预测框的数量。
+        topk_ious, _ = torch.topk(ious_in_boxes_matrix, n_candidate_k, dim=1)   # 获取张量中最大的k个值及其相应的索引；
+        dynamic_ks = torch.clamp(topk_ious.sum(1).int(), min=1)                 # dynamic_ks限制最小为1，保证一个gt至少有一个正样本; 刚开始训练时，由于预测不准，dynamic_k基本上是1
+        dynamic_ks = dynamic_ks.tolist()                                        # [2, 2, 3], 获取到每个目标框分配到的预测框正样本。
         for gt_idx in range(num_gt):
             _, pos_idx = torch.topk(
                 cost[gt_idx], k=dynamic_ks[gt_idx], largest=False
@@ -169,7 +175,7 @@ class SimOTA(object):
         del topk_ious, dynamic_ks, pos_idx
 
         anchor_matching_gt = matching_matrix.sum(0)
-        if (anchor_matching_gt > 1).sum() > 0:
+        if (anchor_matching_gt > 1).sum() > 0:                                   # 针对一个anchor匹配了2个gt情况进行处理
             _, cost_argmin = torch.min(cost[:, anchor_matching_gt > 1], dim=0)
             matching_matrix[:, anchor_matching_gt > 1] *= 0
             matching_matrix[cost_argmin, anchor_matching_gt > 1] = 1

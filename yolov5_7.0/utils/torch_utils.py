@@ -240,7 +240,10 @@ def prune(model, amount=0.3):
     import torch.nn.utils.prune as prune
     for name, m in model.named_modules():
         if isinstance(m, nn.Conv2d):
+            # 溢出卷积层中30%的参数量；其中L1非结构化剪枝方法，会根据权重绝对值大小来判断哪些权重需要剪枝。
             prune.l1_unstructured(m, name='weight', amount=amount)  # prune
+            # remove之前，权重参数张量会附加一个掩码矩阵标记哪些权重被剪枝，而被认定为剪枝的权重，实际上仍然存在；
+            # remove之后，权重参数张量删除掩码矩阵，被认定为剪枝的权重直接变为0；
             prune.remove(m, 'weight')  # make permanent
     LOGGER.info(f'Model pruned to {sparsity(model):.3g} global sparsity')
 

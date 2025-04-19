@@ -129,7 +129,7 @@ def augment_hsv(img, hgain=0.5, sgain=0.5, vgain=0.5):
 def yolov5_mosaic_augment(image_list, target_list, img_size, affine_params, is_train=False):
     assert len(image_list) == 4
 
-    mosaic_img = np.ones([img_size*2, img_size*2, image_list[0].shape[2]], dtype=np.uint8) * 114
+    mosaic_img = np.ones([img_size*2, img_size*2, image_list[0].shape[2]], dtype=np.uint8) * 114   #! 注意马赛克图像是要求图像大小的两倍
     #! mosaic center
     yc, xc = [int(random.uniform(-x, 2*img_size + x)) for x in [-img_size // 2, -img_size // 2]]
     # yc = xc = self.img_size

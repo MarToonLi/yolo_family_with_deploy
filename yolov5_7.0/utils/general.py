@@ -999,6 +999,74 @@ def non_max_suppression(
     return output
 
 
+
+def non_max_suppression2(
+        prediction,            # [batchsize, anchors, 4+1+nc]
+        conf_thres=0.25,
+        iou_thres=0.45,
+        classes=None,
+        agnostic=False,
+        max_det=300,
+        nm=0,  # number of masks
+):
+    """Non-Maximum Suppression (NMS) on inference results to reject overlapping detections
+    Returns:
+        list of detections, on (n,6) tensor per image [xyxy, conf, cls]
+    """
+    # basic
+    bs = prediction.shape[0]              # batch size
+    nc = prediction.shape[2] - nm - 5     # number of classes
+    xc = prediction[..., 4]               # candidates
+    
+    
+    # Settings
+    xc = xc > conf_thres
+    mi = 5 + nc                          # mask start index
+    output = [torch.zeros((0, 6 + nm), device=prediction.device)] * bs
+    
+    
+    # 遍历每个batch
+    for xi, x in enumerate(prediction):  # image index, image inference [anchors, 4+1+nc]
+        
+        #? Filter by obj_conf
+        x = x[xc[xi]]                    # confidence (filter)
+
+        #? If none remain process next image
+        if not x.shape[0]: continue
+
+        # settings
+        x[:, 5:] *= x[:, 4:5]      # conf = obj_conf * cls_conf
+        box = xywh2xyxy(x[:, :4])  # center_x, center_y, width, height) to (x1, y1, x2, y2)
+
+        #? Filter by cls_conf
+        #? Detections matrix nx6 (xyxy, cls_conf(scores), cls(label))
+        cls_conf, j = x[:, 5:mi].max(1, keepdim=True)  # conf:(N, 1)，表示每个边界框的最大类别置信度分数。j:(N, 1)，表示每个边界框的最大类别置信度分数对应的类别索引。
+        x = torch.cat((box, cls_conf, j.float()), 1)[cls_conf.view(-1) > conf_thres]   #? 这里不再包含前景置信度
+
+        #? Filter by class
+        if classes is not None:
+            x = x[(x[:, 5:6] == torch.tensor(classes, device=x.device)).any(1)]
+
+        # Check shape
+        n = x.shape[0]     # number of boxes
+        
+        #? Filter by NMS
+        if not n:continue  # no boxes
+        else: x = x[x[:, 4].argsort(descending=True)]            # sort by confidence
+        boxes, scores = x[:, :4], x[:, 4]                  # boxes, scores
+        i = torchvision.ops.nms(boxes, scores, iou_thres)  # NMS
+        if i.shape[0] > max_det: i = i[:max_det]           # limit detections
+        
+        # Output
+        output[xi] = x[i]
+        
+    return output
+
+
+
+
+
+
 def strip_optimizer(f='best.pt', s=''):  # from utils.general import *; strip_optimizer()
     # Strip optimizer from 'f' to finalize training, optionally save as 's'
     x = torch.load(f, map_location=torch.device('cpu'))

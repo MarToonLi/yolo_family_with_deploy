@@ -59,7 +59,7 @@ def parse_args():
                         help='cancel strong augmentation.')
 
     # Model
-    parser.add_argument('-m', '--model', default='yolov5_s', type=str,
+    parser.add_argument('-m', '--model', default='yolox_s', type=str,
                         help='build yolo')
     parser.add_argument('-ct', '--conf_thresh', default=0.005, type=float,
                         help='confidence threshold')
