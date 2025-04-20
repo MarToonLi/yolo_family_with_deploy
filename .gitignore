@@ -5,3 +5,4 @@
 /yolov5_7.0/*.out
 *.pth
 /weights
+**.zip
