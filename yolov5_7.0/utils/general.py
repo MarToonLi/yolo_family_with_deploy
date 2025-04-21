@@ -456,7 +456,7 @@ def check_yaml(file, suffix=('.yaml', '.yml')):
     # Search/download YAML file (if necessary) and return path, checking suffix
     return check_file(file, suffix)
 
-
+#! 确保指定的文件存在并返回其路径。如果文件不存在，函数将尝试从指定的URL下载文件。如果文件已经存在，函数将返回文件的路径。
 def check_file(file, suffix=''):
     # Search/download file (if necessary) and return path
     check_suffix(file, suffix)  # optional

@@ -438,16 +438,25 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
 
 def parse_opt(known=False):
+    
+    root = r"F:\Projects\yolo_family\yolov5_7.0"
+    
+    weights = os.path.join(root, "yolov5s_ori.pt")
+    cfg     = os.path.join(root, "models/Apple_3_7/yolov5s.yaml")
+    data    = os.path.join(root, "data/cable/Apple_3_7.yaml")
+    hyp     = os.path.join(root, "data/hyps/Apple_3_7_hyp.scratch-low.yaml")
+    
+    
     parser = argparse.ArgumentParser()
     # 最为常用的参数
     # /home/python_projects/yolo_family_with_deploy/yolov5_7.0/runs/train/exp8/weights/best.pt
     # ROOT / 'runs/train/exp8/weights/best.pt'
-    parser.add_argument('--weights',         type=str, default="",help='initial weights path')
-    parser.add_argument('--cfg',             type=str, default=ROOT / 'models/Apple_3_7/yolov5s.yaml',  help='models/Apple_3_7/yolov5n.yaml')
-    parser.add_argument('--data',            type=str, default=ROOT / 'data/Apple_3_7.yaml',            help='dataset.yaml path')
-    parser.add_argument('--hyp',             type=str, default=ROOT / 'data/hyps/Apple_3_7_hyp.scratch-low.yaml', help='hyperparameters path')   # ?
+    parser.add_argument('--weights',         type=str, default=weights,          help='initial weights path')
+    parser.add_argument('--cfg',             type=str, default=cfg ,             help='模型配置文件路径')
+    parser.add_argument('--data',            type=str, default=data,             help='dataset.yaml path')
+    parser.add_argument('--hyp',             type=str, default=hyp ,             help='训练超参数配置文件路径')
     parser.add_argument('--epochs',          type=int, default=500,                                     help='total training epochs')  
-    parser.add_argument('--batch-size',      type=int, default=-1,                                       help='total batch size for all GPUs, -1 for autobatch')
+    parser.add_argument('--batch-size',      type=int, default=8,                                       help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640,                       help='train, val image size (pixels)')
     parser.add_argument('--optimizer',       type=str, choices=['SGD', 'Adam', 'AdamW'], default='Adam', help='optimizer')
     parser.add_argument('--cos-lr',          action='store_true',                                       help='cosine LR scheduler')
