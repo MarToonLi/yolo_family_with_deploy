@@ -1,10 +1,12 @@
 # YOLOv5 requirements
 # Usage: pip install -r requirements.txt
+#! pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu118
+# onnxruntime-gpu==1.16.1
 
 # Base ------------------------------------------------------------------------
 gitpython>=3.1.30
 matplotlib>=3.3
-numpy>=1.23.5
+numpy==1.24.4
 opencv-python>=4.1.1
 pillow>=10.3.0  # Pillow==9.5
 psutil  # system resources
@@ -29,7 +31,8 @@ seaborn>=0.11.0
 
 # Export ----------------------------------------------------------------------
 coremltools>=6.0  # CoreML export
-onnx>=1.10.0  # ONNX export
+#onnx>=1.10.0  # ONNX export
+onnx==1.17.0
 onnx-simplifier>=0.4.1  # ONNX simplifier
 # nvidia-pyindex  # TensorRT export
 # nvidia-tensorrt  # TensorRT export
@@ -47,3 +50,10 @@ ipython  # interactive notebook
 mss  # screenshots
 albumentations>=1.0.3   # pip install albumentations==1.4.23 --upgrade
 pycocotools>=2.0.6  # COCO mAP
+
+
+onnxruntime-gpu==1.16.1
+cuda_bindings==12.8.0
+polygraphy==0.47.1
+cuda-python
+onnx_graphsurgeon==0.5.8
