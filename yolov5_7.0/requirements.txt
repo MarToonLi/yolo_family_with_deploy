@@ -57,3 +57,8 @@ cuda_bindings==12.8.0
 #polygraphy==0.47.1   # 华为源找不到
 #cuda-python
 #onnx_graphsurgeon==0.5.8
+
+
+# pip install polygraphy==0.47.1 --index-url https://pypi.ngc.nvidia.com
+# pip install cuda-python -i https://mirrors.huaweicloud.com/repository/pypi/simple
+# pip install onnx_graphsurgeon==0.5.8 -i https://mirrors.huaweicloud.com/repository/pypi/simple

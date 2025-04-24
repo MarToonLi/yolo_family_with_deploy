@@ -443,13 +443,13 @@ def check_os():
     system = platform.system()
     if system == "Windows":
         return "Windows"
-    elif system == "Linux":
-        # 进一步检查是否是 Ubuntu
-        distro = platform.linux_distribution()
-        if "Ubuntu" in distro:
-            return "Ubuntu"
-        else:
-            return "Linux (非 Ubuntu)"
+    # elif system == "Linux":
+    #     # 进一步检查是否是 Ubuntu
+    #     distro = platform.linux_distribution()
+    #     if "Ubuntu" in distro:
+    #         return "Ubuntu"
+    #     else:
+    #         return "Linux (非 Ubuntu)"
     else:
         return "其他操作系统"
 
