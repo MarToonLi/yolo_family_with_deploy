@@ -6,3 +6,11 @@
 *.pth
 /weights
 **.zip
+**.png
+**.jpg
+**.pt
+**.out.**
+runs/train/exp/events.out.tfevents.1745245470.DESKTOP-V3S8LSQ.29984.0
+**.txt
+**.onnx
+**.pt

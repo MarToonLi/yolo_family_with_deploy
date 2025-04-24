@@ -120,6 +120,8 @@ class BaseValidator:
         self.speed = {"preprocess": 0.0, "inference": 0.0, "loss": 0.0, "postprocess": 0.0}
 
         self.save_dir = save_dir or get_save_dir(self.args)
+        
+        
         (self.save_dir / "labels" if self.args.save_txt else self.save_dir).mkdir(parents=True, exist_ok=True)
         if self.args.conf is None:
             self.args.conf = 0.001  # default conf=0.001
@@ -128,7 +130,7 @@ class BaseValidator:
         self.plots = {}
         self.callbacks = _callbacks or callbacks.get_default_callbacks()
 
-    @smart_inference_mode()
+    @smart_inference_mode()  #! 根据torch版本智能化开启推理模式
     def __call__(self, trainer=None, model=None):
         """
         Execute validation process, running inference on dataloader and computing performance metrics.
@@ -141,7 +143,7 @@ class BaseValidator:
             stats (dict): Dictionary containing validation statistics.
         """
         self.training = trainer is not None
-        augment = self.args.augment and (not self.training)
+        augment = self.args.augment and (not self.training)  # always not augment if training
         if self.training:
             self.device = trainer.device
             self.data = trainer.data
