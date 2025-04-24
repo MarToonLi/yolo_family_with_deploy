@@ -54,6 +54,6 @@ pycocotools>=2.0.6  # COCO mAP
 
 onnxruntime-gpu==1.16.1
 cuda_bindings==12.8.0
-polygraphy==0.47.1
-cuda-python
-onnx_graphsurgeon==0.5.8
+#polygraphy==0.47.1   # 华为源找不到
+#cuda-python
+#onnx_graphsurgeon==0.5.8
