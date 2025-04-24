@@ -1,8 +1,7 @@
-
 /.idea
 /yolov5_7.0/runs
 /__pycache__
-/yolov5_7.0/*.out
+*.out
 *.pth
 /weights
 **.zip
@@ -10,7 +9,7 @@
 **.jpg
 **.pt
 **.out.**
-runs/train/exp/events.out.tfevents.1745245470.DESKTOP-V3S8LSQ.29984.0
 **.txt
 **.onnx
 **.pt
+/runs

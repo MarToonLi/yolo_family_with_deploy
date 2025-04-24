@@ -437,14 +437,36 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
 
 
+def check_os():
+    import platform
+    
+    system = platform.system()
+    if system == "Windows":
+        return "Windows"
+    elif system == "Linux":
+        # 进一步检查是否是 Ubuntu
+        distro = platform.linux_distribution()
+        if "Ubuntu" in distro:
+            return "Ubuntu"
+        else:
+            return "Linux (非 Ubuntu)"
+    else:
+        return "其他操作系统"
+
+
 def parse_opt(known=False):
-    
-    root = r"F:\Projects\yolo_family\yolov5_7.0"
-    
-    weights = os.path.join(root, "yolov5s_ori.pt")
-    cfg     = os.path.join(root, "models/Apple_3_7/yolov5s.yaml")
-    data    = os.path.join(root, "data/cable/Apple_3_7.yaml")
-    hyp     = os.path.join(root, "data/hyps/Apple_3_7_hyp.scratch-low.yaml")
+    if check_os() == "Windows":
+        root = r"F:\Projects\yolo_family\yolov5_7.0"
+        weights = os.path.join(root, "resources\models\yolov5\yolov5s.pt")
+        cfg     = os.path.join(root, "models/apple_3_7/yolov5s.yaml")
+        data    = os.path.join(root, "data/cable/apple_3_7_train.yaml")
+        hyp     = os.path.join(root, "data/hyps/apple_3_7_hyp.scratch-low.yaml")
+    else:
+        root = r"/ns_data/projets/yolo_family_with_deploy/yolov5_7.0"
+        weights = os.path.join(root, "resources\models\yolov5\yolov5s.pt")
+        cfg     = os.path.join(root, "models/apple_3_7/yolov5s.yaml")
+        data    = os.path.join(root, "data/cable/apple_3_7_train_remote.yaml")
+        hyp     = os.path.join(root, "data/hyps/apple_3_7_hyp.scratch-low.yaml")
     
     
     parser = argparse.ArgumentParser()
