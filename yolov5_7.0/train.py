@@ -468,6 +468,7 @@ def parse_opt(known=False):
         data    = os.path.join(root, "data/cable/apple_3_7_train_remote.yaml")
         hyp     = os.path.join(root, "data/hyps/apple_3_7_hyp.scratch-low.yaml")
     
+    print("mark: 202504241232")
     
     parser = argparse.ArgumentParser()
     # 最为常用的参数
