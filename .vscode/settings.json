@@ -1,3 +1,6 @@
 {
-    "cmake.sourceDirectory": "F:/Projects/yolo_family/yolov5_cpp_deploy"
+    "cmake.sourceDirectory": "F:/Projects/yolo_family/yolov5_cpp_deploy",
+    "python.analysis.extraPaths": [
+    "F:\\Projects\\yolo_family\\yolov11\\ultralytics"
+]
 }

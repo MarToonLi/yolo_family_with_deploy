@@ -652,9 +652,9 @@ if __name__ == "__main__":
     
     ### ==================  onnx导出相关修改  ====================== ###
     opt.data = ROOT / 'data/coco128.yaml'
-    opt.weights = "F:\Projects\yolo_family\yolov5_7.0\yolov5x_ori.pt"
+    opt.weights = r"F:\Projects\yolo_family\resources\models\yolov5\yolov5s_static.pt"
     opt.device = "cpu"
-    opt.dynamic = True
+    opt.dynamic = False   
     opt.simplify = True
     opt.opset = 12
     opt.include = ["onnx"]

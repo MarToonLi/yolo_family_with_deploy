@@ -1,3 +1,11 @@
+*.onnx
+**.onnx
+*.pt
+*.pth
+*.bin
+*.tflite
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
