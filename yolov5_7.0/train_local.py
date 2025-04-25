@@ -505,7 +505,7 @@ def parse_opt(known=False):
     
     
     # DDP和多GPU等相关
-    parser.add_argument('--device',          default="0,1",                                                help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device',          default="0",                                                help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--resume',          nargs='?', const=True, default=False,                      help='resume most recent training')    # 断点续训
     parser.add_argument('--nosave',          action='store_true',                                       help='only save final checkpoint')
     parser.add_argument('--noval',           action='store_true',                                       help='only validate final epoch')
