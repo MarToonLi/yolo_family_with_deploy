@@ -460,13 +460,13 @@ def parse_opt(known=False):
         weights = os.path.join(root, "resources\models\yolov5\yolov5s.pt")
         cfg     = os.path.join(root, "yolov5_7.0\models/apple_3_7/yolov5s.yaml")
         data    = os.path.join(root, "yolov5_7.0\data/cable/apple_3_7_train.yaml")
-        hyp     = os.path.join(root, "yolov5_7.0\data/hyps/apple_3_7_hyp.scratch-low.yaml")
+        hyp     = os.path.join(root, "yolov5_7.0\data/hyps/apple_3_7_hyp_evolve.yaml")
     else:
         root = r"/ns_data/projets/yolo_family_with_deploy"
         weights = os.path.join(root, r"resources/models/yolov5/yolov5s.pt")
         cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5s.yaml")
         data    = os.path.join(root, "yolov5_7.0/data/cable/apple_3_7_train_remote.yaml")
-        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp.scratch-low.yaml")
+        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve.yaml")
     print("mark: 202504241232")
     
     parser = argparse.ArgumentParser()
