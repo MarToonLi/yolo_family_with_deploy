@@ -76,7 +76,7 @@ onnx-simplifier>=0.4.1  # ONNX simplifier
 # Extras ----------------------------------------------------------------------
 ipython  # interactive notebook
 mss      # screenshots
-albumentations>=1.0.3   #! pip install albumentations==1.4.23 --upgrade  
+# albumentations>=1.0.3   #! pip install albumentations==1.4.23 --upgrade  
 pycocotools>=2.0.6      # COCO mAP
 
 
@@ -96,3 +96,8 @@ cuda_bindings==12.8.0
 # pip install polygraphy==0.47.1 --index-url https://pypi.ngc.nvidia.com
 # pip install cuda-python -i https://mirrors.huaweicloud.com/repository/pypi/simple
 # pip install onnx_graphsurgeon==0.5.8 -i https://mirrors.huaweicloud.com/repository/pypi/simple
+
+
+
+# pip install wandb -i https://mirrors.huaweicloud.com/repository/pypi/simple
+# pip install -U ultralytics "ray[tune]"

@@ -4,4 +4,7 @@
 # python train.py  --batch-size 64 --data coco.yaml --weights yolov5s.pt --device 0
 
 # Multi-GPU with delay
-nohup python -m torch.distributed.run --nproc_per_node 2 train.py --device 0,1 --batch 96  > output_2.log 2>&1 &
+# nohup python -m torch.distributed.run --nproc_per_node 2 train.py --device 0,1 --batch 96  > output_2.log 2>&1 &
+nohup python -m torch.distributed.run --nproc_per_node 2 train.py --device 0,1 --batch 16 --imgsz 1120 > output_2.log 2>&1 &
+
+# python -m torch.distributed.run --nproc_per_node 2 train.py --device 0,1 --batch 32 --imgsz 1120 > output_2.log 2>&1 &

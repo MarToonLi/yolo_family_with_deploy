@@ -1,0 +1,101 @@
+
+# Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..] 
+path: /ns_data/datasets/3-7_jpg  # dataset root dir   # 本地路径
+# path: /local_data/datasets/3-7 TH -v1  # dataset root dir
+train:  # train images (relative to 'path') 128 images
+  - images/0807  
+  - images/0817  
+  - images/0820  
+  - images/0826  
+  - images/0830  
+  - images/0905  
+  - images/0907  
+  - images/0910  
+  - images/0920  
+  - images/0923    
+  - images/0924  
+  - images/0926  
+  - images/1008  
+  - images/1010  
+  - images/1018  
+  - images/1112  
+  - images/1127  
+  - images/1203  
+  - images/1207  
+  - images/1216  
+  - images/200ARR  
+  - images/train_jpg
+  - images/0813  
+  - images/0819  
+  - images/0824  
+  - images/0829  
+  - images/0904  
+  - images/0906  
+  - images/0909  
+  - images/0917  
+  - images/0921  
+  - images/0923_2  
+  - images/0925  
+  - images/1007  
+  - images/1009  
+  - images/1016  
+  - images/1021  
+  - images/1126  
+  - images/1128  
+  - images/1204  
+  - images/1214  
+  - images/1224  
+  - images/test1
+val: # val images (relative to 'path') 128 images
+  - images/0807  
+  - images/0817  
+  - images/0820  
+  - images/0826  
+  - images/0830  
+  - images/0905  
+  - images/0907  
+  - images/0910  
+  - images/0920  
+  - images/0923    
+  - images/0924  
+  - images/0926  
+  - images/1008  
+  - images/1010  
+  - images/1018  
+  - images/1112  
+  - images/1127  
+  - images/1203  
+  - images/1207  
+  - images/1216  
+  - images/200ARR  
+  - images/train_jpg
+  - images/0813  
+  - images/0819  
+  - images/0824  
+  - images/0829  
+  - images/0904  
+  - images/0906  
+  - images/0909  
+  - images/0917  
+  - images/0921  
+  - images/0923_2  
+  - images/0925  
+  - images/1007  
+  - images/1009  
+  - images/1016  
+  - images/1021  
+  - images/1126  
+  - images/1128  
+  - images/1204  
+  - images/1214  
+  - images/1224  
+  - images/test1
+test:  # test images (optional)
+
+# Classes
+names:
+  0: NG_scratch
+  1: NG_damage
+  2: NG_contamination
+  3: NG_fpdent
+  4: NG_fibra
