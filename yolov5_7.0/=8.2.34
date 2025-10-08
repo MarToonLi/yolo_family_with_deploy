@@ -1,0 +1,19 @@
+Looking in indexes: https://mirrors.huaweicloud.com/repository/pypi/simple
+Collecting gitpython
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/01/61/d4b89fec821f72385526e1b9d9a3a0385dda4a72b206d28049e2c7cd39b8/gitpython-3.1.45-py3-none-any.whl (208 kB)
+Collecting matplotlib
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/d3/29/4a8650a3dcae97fa4f375d46efcb25920d67b512186f8a6788b896062a81/matplotlib-3.10.6-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (8.7 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8.7/8.7 MB 2.2 MB/s  0:00:03
+Collecting numpy==1.24.4
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/22/97/dfb1a31bb46686f09e68ea6ac5c63fdee0d22d7b23b8f3f7ea07712869ef/numpy-1.24.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (17.3 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 17.3/17.3 MB 2.5 MB/s  0:00:06
+Collecting opencv-python
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/68/1f/795e7f4aa2eacc59afa4fb61a2e35e510d06414dd5a802b51a012d691b37/opencv_python-4.12.0.88-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (67.0 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 67.0/67.0 MB 2.3 MB/s  0:00:28
+Requirement already satisfied: PyYAML in /opt/miniconda3/envs/deploy/lib/python3.11/site-packages (6.0.3)
+Collecting psutil
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/9d/de/04c8c61232f7244aa0a4b9a9fbd63a89d5aeaf94b2fc9d1d16e2faa5cbb0/psutil-7.1.0-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (291 kB)
+Requirement already satisfied: requests in /opt/miniconda3/envs/deploy/lib/python3.11/site-packages (2.28.1)
+Collecting scipy
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/1a/bc/a5c75095089b96ea72c1bd37a4497c24b581ec73db4ef58ebee142ad2d14/scipy-1.16.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (35.9 MB)
+     ━━━━━━━━━━━━━                            11.8/35.9 MB 2.6 MB/s eta 0:00:10
