@@ -613,7 +613,7 @@ def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='dataset.yaml path')
     parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'yolov5s.pt', help='model.pt path(s)')
-    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640, 640], help='image (h, w)')
+    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[1120, 1120], help='image (h, w)')
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
     parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--half', action='store_true', help='FP16 half-precision export')
@@ -651,9 +651,10 @@ if __name__ == "__main__":
     opt = parse_opt()
     
     ### ==================  onnx导出相关修改  ====================== ###
-    opt.data = ROOT / 'data/coco128.yaml'
-    opt.weights = r"F:\Projects\yolo_family\resources\models\yolov5\yolov5s_static.pt"
-    opt.device = "cpu"
+    opt.data = r"/ns_data/projets/yolo_family_with_deploy/yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml"
+    opt.weights = r"/ns_data/projets/yolo_family_with_deploy/yolov5_7.0/runs/train/exp3/weights/best.pt"
+    opt.device = "0"
+    opt.imgsz = [1120, 1120]
     opt.dynamic = False   
     opt.simplify = True
     opt.opset = 12

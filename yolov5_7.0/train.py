@@ -464,11 +464,11 @@ def parse_opt(known=False):
     else:
         root = r"/ns_data/projets/yolo_family_with_deploy"
         # /ns_data/projets/yolo_family_with_deploy/resources/models/yolov5/yolov5s.pt
-        # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp3/weights/best.pt")
-        weights = os.path.join(root, r"resources/models/yolov5/yolov5s.pt")
+        weights = os.path.join(root, r"yolov5_7.0/runs/train/exp14/weights/best.pt")
+        # weights = os.path.join(root, r"resources/models/yolov5/yolov5s.pt")
         cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5s.yaml")
         data    = os.path.join(root, "yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml")
-        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve.yaml")
+        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_finetune.yaml")
     print("mark: 202504241232")
     
     parser = argparse.ArgumentParser()
@@ -479,13 +479,13 @@ def parse_opt(known=False):
     parser.add_argument('--cfg',             type=str, default=cfg ,             help='模型配置文件路径')
     parser.add_argument('--data',            type=str, default=data,             help='dataset.yaml path')
     parser.add_argument('--hyp',             type=str, default=hyp ,             help='训练超参数配置文件路径')
-    parser.add_argument('--epochs',          type=int, default=500,                                     help='total training epochs')  
+    parser.add_argument('--epochs',          type=int, default=80,                                     help='total training epochs')  
     parser.add_argument('--batch-size',      type=int, default=-1,                                       help='total batch size for all GPUs, -1 for autobatch')
-    parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640,                       help='train, val image size (pixels)')
+    parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=1120,                       help='train, val image size (pixels)')
     parser.add_argument('--optimizer',       type=str, choices=['SGD', 'Adam', 'AdamW'], default='Adam', help='optimizer')
     parser.add_argument('--cos-lr',          action='store_true',                                       help='cosine LR scheduler')
     parser.add_argument('--patience',        type=int, default=50,                                     help='EarlyStopping patience (epochs without improvement)')
-    parser.add_argument('--freeze',          nargs='+', type=int, default=[0],                          help='Freeze layers: backbone=10, first3=0 1 2')
+    parser.add_argument('--freeze',          nargs='+', type=int, default=[10],                          help='Freeze layers: backbone=10, first3=0 1 2')
     parser.add_argument('--save-period',     type=int, default=-1,                                      help='Save checkpoint every x epochs (disabled if < 1)')
     parser.add_argument('--seed',            type=int, default=0,                                       help='Global training seed')
     
