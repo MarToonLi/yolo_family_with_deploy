@@ -1,5 +1,5 @@
 # YOLOv5 requirements
-# version: cp311
+# version: cp39 ; 最好不要使用3.11，可能会遇到re.errror的问题
 # Usage: pip install -r requirements.txt
 # pip install -i https://mirrors.huaweicloud.com/repository/pypi/simple 
 
@@ -9,13 +9,15 @@
 # pip install -i https://mirrors.huaweicloud.com/repository/pypi/simple onnxruntime-gpu==1.16.1
 ### ===================== ###
 
-
+onnxruntime-gpu==1.16.1
 # Base ------------------------------------------------------------------------
 gitpython>=3.1.30
 matplotlib>=3.3
 numpy==1.24.4
-opencv-python>=4.1.1
+opencv-python==4.9.0.80 # >=4.1.1
+opencv-python-headless==4.9.0.80 # >=4.1.1
 # pillow>=10.3.0  # Pillow==9.5
+Pillow==9.5
 psutil  # system resources
 PyYAML>=5.3.1
 requests>=2.32.2
@@ -38,7 +40,7 @@ ultralytics>=8.2.34  # https://ultralytics.com
 
 # Logging ---------------------------------------------------------------------
 tensorboard>=2.4.1   
-clearml>=1.2.0
+clearml==1.2.0   #
 # comet   # 3.9中安装出现问题
 
 
@@ -63,12 +65,12 @@ onnx-simplifier>=0.4.1  # ONNX simplifier
 ### ======================= ###
 # pip install -i https://mirrors.huaweicloud.com/repository/pypi/simple onnx==1.17.0
 ### ======================= ###
-
+onnx==1.17.0
 
 
 
 # Deploy ----------------------------------------------------------------------
-#setuptools>=70.0.0 # Snyk vulnerability fix 
+#setuptools==70.0.0 # Snyk vulnerability fix 
 #?tritonclient[all]~=2.24.0   # 编译失败
 
 

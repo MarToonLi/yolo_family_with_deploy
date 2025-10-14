@@ -1,0 +1,94 @@
+Looking in indexes: https://mirrors.huaweicloud.com/repository/pypi/simple
+Collecting gitpython
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/01/61/d4b89fec821f72385526e1b9d9a3a0385dda4a72b206d28049e2c7cd39b8/gitpython-3.1.45-py3-none-any.whl (208 kB)
+Collecting matplotlib
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/33/cd/b145f9797126f3f809d177ca378de57c45413c5099c5990de2658760594a/matplotlib-3.10.7-cp311-cp311-win_amd64.whl (8.1 MB)
+     ---------------------------------------- 8.1/8.1 MB 38.7 MB/s  0:00:00
+Collecting numpy==1.24.4
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/d8/ec/ebef2f7d7c28503f958f0f8b992e7ce606fb74f9e891199329d5f5f87404/numpy-1.24.4-cp311-cp311-win_amd64.whl (14.8 MB)
+     ---------------------------------------- 14.8/14.8 MB 44.4 MB/s  0:00:00
+Collecting opencv-python
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/fa/80/eb88edc2e2b11cd2dd2e56f1c80b5784d11d6e6b7f04a1145df64df40065/opencv_python-4.12.0.88-cp37-abi3-win_amd64.whl (39.0 MB)
+     ---------------------------------------- 39.0/39.0 MB 11.9 MB/s  0:00:03
+Collecting psutil
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/bf/e9/b44c4f697276a7a95b8e94d0e320a7bf7f3318521b23de69035540b39838/psutil-7.1.0-cp37-abi3-win_amd64.whl (247 kB)
+Collecting PyYAML
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/da/e3/ea007450a105ae919a72393cb06f122f288ef60bba2dc64b26e2646fa315/pyyaml-6.0.3-cp311-cp311-win_amd64.whl (158 kB)
+Requirement already satisfied: requests in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (2.28.1)
+Collecting scipy
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/d6/73/c449a7d56ba6e6f874183759f8483cde21f900a8be117d67ffbb670c2958/scipy-1.16.2-cp311-cp311-win_amd64.whl (38.7 MB)
+     ---------------------------------------- 38.7/38.7 MB 11.8 MB/s  0:00:03
+Collecting thop
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/bb/0f/72beeab4ff5221dc47127c80f8834b4bcd0cb36f6ba91c0b1d04a1233403/thop-0.1.1.post2209072238-py3-none-any.whl (15 kB)
+Requirement already satisfied: torchvision in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (0.16.0+cu118)
+Collecting tqdm
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/d0/30/dc54f88dd4a2b5dc8a0279bdd7270e735851848b762aeb1c1184ed1f6b14/tqdm-4.67.1-py3-none-any.whl (78 kB)
+Collecting ultralytics
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/c0/09/3dbab41cedf9ebf1e2611473548a1ab33305474907e4fe0310449a98738c/ultralytics-8.3.213-py3-none-any.whl (1.1 MB)
+     ---------------------------------------- 1.1/1.1 MB 17.3 MB/s  0:00:00
+Collecting gitdb<5,>=4.0.1 (from gitpython)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/a0/61/5c78b91c3143ed5c14207f463aecfc8f9dbb5092fb2869baf37c273b2705/gitdb-4.0.12-py3-none-any.whl (62 kB)
+Collecting smmap<6,>=3.0.1 (from gitdb<5,>=4.0.1->gitpython)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/04/be/d09147ad1ec7934636ad912901c5fd7667e1c858e19d355237db0d0cd5e4/smmap-5.0.2-py3-none-any.whl (24 kB)
+Collecting contourpy>=1.0.1 (from matplotlib)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/98/4b/9bd370b004b5c9d8045c6c33cf65bae018b27aca550a3f657cdc99acdbd8/contourpy-1.3.3-cp311-cp311-win_amd64.whl (225 kB)
+Collecting cycler>=0.10 (from matplotlib)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/e7/05/c19819d5e3d95294a6f5947fb9b9629efb316b96de511b418c53d245aae6/cycler-0.12.1-py3-none-any.whl (8.3 kB)
+Collecting fonttools>=4.22.0 (from matplotlib)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/bb/78/0e1a6d22b427579ea5c8273e1c07def2f325b977faaf60bb7ddc01456cb1/fonttools-4.60.1-cp311-cp311-win_amd64.whl (2.3 MB)
+     ---------------------------------------- 2.3/2.3 MB 32.0 MB/s  0:00:00
+Collecting kiwisolver>=1.3.1 (from matplotlib)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/3b/c6/f8df8509fd1eee6c622febe54384a96cfaf4d43bf2ccec7a0cc17e4715c9/kiwisolver-1.4.9-cp311-cp311-win_amd64.whl (73 kB)
+Requirement already satisfied: packaging>=20.0 in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from matplotlib) (25.0)
+Requirement already satisfied: pillow>=8 in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from matplotlib) (11.0.0)
+Collecting pyparsing>=3 (from matplotlib)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/10/5e/1aa9a93198c6b64513c9d7752de7422c06402de6600a8767da1524f9570b/pyparsing-3.2.5-py3-none-any.whl (113 kB)
+Collecting python-dateutil>=2.7 (from matplotlib)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+INFO: pip is looking at multiple versions of opencv-python to determine which version is compatible with other requirements. This could take a while.
+Collecting opencv-python
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/a4/7d/f1c30a92854540bf789e9cd5dde7ef49bbe63f855b85a2e6b3db8135c591/opencv_python-4.11.0.86-cp37-abi3-win_amd64.whl (39.5 MB)
+     ---------------------------------------- 39.5/39.5 MB 12.1 MB/s  0:00:03
+Requirement already satisfied: charset-normalizer<3,>=2 in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from requests) (2.1.1)
+Requirement already satisfied: idna<4,>=2.5 in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from requests) (3.4)
+Requirement already satisfied: urllib3<1.27,>=1.21.1 in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from requests) (1.26.13)
+Requirement already satisfied: certifi>=2017.4.17 in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from requests) (2022.12.7)
+INFO: pip is looking at multiple versions of scipy to determine which version is compatible with other requirements. This could take a while.
+Collecting scipy
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/c4/94/994369978509f227cba7dfb9e623254d0d5559506fe994aef4bea3ed469c/scipy-1.16.1-cp311-cp311-win_amd64.whl (38.6 MB)
+     ---------------------------------------- 38.6/38.6 MB 11.9 MB/s  0:00:03
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/8b/c9/750d34788288d64ffbc94fdb4562f40f609d3f5ef27ab4f3a4ad00c9033e/scipy-1.16.0-cp311-cp311-win_amd64.whl (38.6 MB)
+     ---------------------------------------- 38.6/38.6 MB 11.8 MB/s  0:00:03
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/ab/a7/0ddaf514ce8a8714f6ed243a2b391b41dbb65251affe21ee3077ec45ea9a/scipy-1.15.3-cp311-cp311-win_amd64.whl (41.2 MB)
+     ---------------------------------------- 41.2/41.2 MB 12.4 MB/s  0:00:03
+Requirement already satisfied: torch in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from thop) (2.1.0+cu118)
+Requirement already satisfied: filelock in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from torch->thop) (3.13.1)
+Requirement already satisfied: typing-extensions in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from torch->thop) (4.12.2)
+Requirement already satisfied: sympy in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from torch->thop) (1.13.3)
+Requirement already satisfied: networkx in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from torch->thop) (3.3)
+Requirement already satisfied: jinja2 in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from torch->thop) (3.1.4)
+Requirement already satisfied: fsspec in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from torch->thop) (2024.6.1)
+Collecting colorama (from tqdm)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+Collecting polars (from ultralytics)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/6b/80/1791ac226bb989bef30fe8fde752b2021b6ec5dfd6e880262596aedf4c05/polars-1.34.0-py3-none-any.whl (772 kB)
+     ---------------------------------------- 772.7/772.7 kB 16.5 MB/s  0:00:00
+Collecting ultralytics-thop>=2.0.0 (from ultralytics)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/b7/02/de5b1f012a9eb319fdd724049902d7b6886b694c281059e5d734296b74af/ultralytics_thop-2.0.17-py3-none-any.whl (28 kB)
+INFO: pip is looking at multiple versions of contourpy to determine which version is compatible with other requirements. This could take a while.
+Collecting contourpy>=1.0.1 (from matplotlib)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/5e/fe/4029038b4e1c4485cef18e480b0e2cd2d755448bb071eb9977caac80b77b/contourpy-1.3.2-cp311-cp311-win_amd64.whl (222 kB)
+Collecting six>=1.5 (from python-dateutil>=2.7->matplotlib)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl (11 kB)
+Requirement already satisfied: MarkupSafe>=2.0 in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from jinja2->torch->thop) (2.1.5)
+Collecting polars-runtime-32==1.34.0 (from polars->ultralytics)
+  Downloading https://mirrors.huaweicloud.com/repository/pypi/packages/e2/75/c30049d45ea1365151f86f650ed5354124ff3209f0abe588664c8eb13a31/polars_runtime_32-1.34.0-cp39-abi3-win_amd64.whl (40.1 MB)
+     ---------------------------------------- 40.1/40.1 MB 12.2 MB/s  0:00:03
+Requirement already satisfied: mpmath<1.4,>=1.1.0 in d:\appsetup\miniconda3\envs\deploy\lib\site-packages (from sympy->torch->thop) (1.3.0)
+Installing collected packages: smmap, six, PyYAML, pyparsing, psutil, polars-runtime-32, numpy, kiwisolver, fonttools, cycler, colorama, tqdm, scipy, python-dateutil, polars, opencv-python, gitdb, contourpy, ultralytics-thop, thop, matplotlib, gitpython, ultralytics
+  Attempting uninstall: numpy
+    Found existing installation: numpy 2.1.2
+    Uninstalling numpy-2.1.2:
+      Successfully uninstalled numpy-2.1.2
+
+Successfully installed PyYAML-6.0.3 colorama-0.4.6 contourpy-1.3.2 cycler-0.12.1 fonttools-4.60.1 gitdb-4.0.12 gitpython-3.1.45 kiwisolver-1.4.9 matplotlib-3.10.7 numpy-1.24.4 opencv-python-4.11.0.86 polars-1.34.0 polars-runtime-32-1.34.0 psutil-7.1.0 pyparsing-3.2.5 python-dateutil-2.9.0.post0 scipy-1.15.3 six-1.17.0 smmap-5.0.2 thop-0.1.1.post2209072238 tqdm-4.67.1 ultralytics-8.3.213 ultralytics-thop-2.0.17

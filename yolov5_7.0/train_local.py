@@ -456,7 +456,7 @@ def check_os():
 
 def parse_opt(known=False):
     if check_os() == "Windows":
-        root = r"F:\Projects\yolo_family"
+        root = r"D:\ProjectsRelated\CoreProjects\yolo_family_with_deploy"  
         weights = os.path.join(root, "resources\models\yolov5\yolov5s.pt")
         cfg     = os.path.join(root, "yolov5_7.0\models/apple_3_7/yolov5s.yaml")
         data    = os.path.join(root, "yolov5_7.0\data/cable/apple_3_7_train.yaml")
@@ -478,7 +478,7 @@ def parse_opt(known=False):
     parser.add_argument('--data',            type=str, default=data,             help='dataset.yaml path')
     parser.add_argument('--hyp',             type=str, default=hyp ,             help='训练超参数配置文件路径')
     parser.add_argument('--epochs',          type=int, default=500,                                     help='total training epochs')  
-    parser.add_argument('--batch-size',      type=int, default=-1,                                       help='total batch size for all GPUs, -1 for autobatch')
+    parser.add_argument('--batch-size',      type=int, default=4,                                       help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640,                       help='train, val image size (pixels)')
     parser.add_argument('--optimizer',       type=str, choices=['SGD', 'Adam', 'AdamW'], default='Adam', help='optimizer')
     parser.add_argument('--cos-lr',          action='store_true',                                       help='cosine LR scheduler')
