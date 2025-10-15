@@ -5,6 +5,8 @@
 
 # Multi-GPU with delay
 # nohup python -m torch.distributed.run --nproc_per_node 2 train.py --device 0,1 --batch 96  > output_2.log 2>&1 &
-nohup python -m torch.distributed.run --nproc_per_node 2 train.py --device 0,1 --batch 16 --imgsz 1120 > output_2.log 2>&1 &
+# nohup python -m torch.distributed.run --nproc_per_node 2 train.py --device 0 --batch -1 --cache --imgsz 640 > output_1.log 2>&1 &
+
+nohup python train.py --device 0 --batch 24 --cache --imgsz 1120 > output_1.log 2>&1 &
 
 # python -m torch.distributed.run --nproc_per_node 2 train.py --device 0,1 --batch 32 --imgsz 1120 > output_2.log 2>&1 &
