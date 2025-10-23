@@ -1,6 +1,7 @@
 #!/bin/bash
+# ================ local ====================
 # Single-GPU
-# python train.py --epochs 10 --cache --evolve
+python ../train.py --epochs 10 --evolve
 
 # Multi-GPU with delay
 #for i in {0..1}; do

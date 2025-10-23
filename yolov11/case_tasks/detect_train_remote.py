@@ -25,7 +25,7 @@ if __name__ == '__main__':
                 imgsz=1120,
                 epochs=500,
                 #single_cls=False,  # 是否是单类别检测
-                batch=-1,
+                batch=16,
                 #close_mosaic=0,
                 device='0',
                 #optimizer='SGD', # using SGD 优化器 默认为auto建议大家使用固定的.

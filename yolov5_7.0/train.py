@@ -456,7 +456,7 @@ def check_os():
 
 def parse_opt(known=False):
     if check_os() == "Windows":
-        root = r"F:\Projects\yolo_family"
+        root = r"D:\ProjectsRelated\CoreProjects\yolo_family_with_deploy"
         weights = os.path.join(root, "resources\models\yolov5\yolov5s.pt")
         cfg     = os.path.join(root, "yolov5_7.0\models/apple_3_7/yolov5s.yaml")
         data    = os.path.join(root, "yolov5_7.0\data/cable/apple_3_7_train.yaml")

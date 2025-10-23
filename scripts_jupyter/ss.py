@@ -18,5 +18,5 @@ def delete_npy_files_glob(root_dir):
 
 
 if __name__ == "__main__":
-    root_dir = os.path.abspath("/root/lanyun-tmp/datasets/3-7_jpg_v2")
+    root_dir = os.path.abspath(r"D:\Datasets\3-7_jpg_v2")
     delete_npy_files_glob(root_dir)
