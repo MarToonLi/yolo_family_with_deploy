@@ -2,7 +2,7 @@
 # ================ remote ====================
 
 # =============== Single-GPU ================
-python ../train.py       --device 0 --batch 24 --cache --imgsz 1120 --epochs 10  --evolve
+python ../../train.py       --device 0 --batch 24 --cache --imgsz 1120 --epochs 10  --evolve
 #nohup python ../train.py --device 0 --batch 24 --cache --imgsz 1120 --epochs 10  --evolve > output_1.log 2>&1 &
 
 
