@@ -10,7 +10,7 @@
 
 
 # linux nohup
-nohup python train.py --device 0 --batch 24 --cache --imgsz 1120 > output_1.log 2>&1 &
+nohup python train.py --device 0 --batch 24 --cache --imgsz 1120 > output_train.log 2>&1 &
 
 
 python train.py --device 0 --batch 24 --cache --imgsz 1120 
