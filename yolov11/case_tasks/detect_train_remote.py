@@ -21,11 +21,11 @@ if __name__ == '__main__':
                 # /ns_data/projets/yolo_family_with_deploy/yolov5_7.0/data/cable/apple_3_7_train_remote.yaml
                 # /ns_data/projets/yolo_family_with_deploy/yolov11/case_tasks/runs/detect/tune12/best_hyperparameters.yaml
                 # 如果大家任务是其它的'ultralytics/cfg/default.yaml'找到这里修改task可以改成detect, segment, classify, pose
-                cache="disk",
+                cache="ram",
                 imgsz=1120,
                 epochs=500,
                 #single_cls=False,  # 是否是单类别检测
-                batch=16,
+                batch=24,
                 #close_mosaic=0,
                 device='0',
                 #optimizer='SGD', # using SGD 优化器 默认为auto建议大家使用固定的.
