@@ -163,7 +163,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
     else:
         lf = lambda x: (1 - x / epochs) * (1.0 - hyp['lrf']) + hyp['lrf']  # linear
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)             
-    plot_lr_scheduler(optimizer, scheduler, epochs)                        # todo: 通常用于train.py中学习率设置后可视化一下
+    plot_lr_scheduler(optimizer, scheduler, epochs, save_dir)                        # todo: 通常用于train.py中学习率设置后可视化一下
     
     
     # EMA

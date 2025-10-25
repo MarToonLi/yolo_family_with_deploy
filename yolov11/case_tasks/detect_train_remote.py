@@ -5,10 +5,28 @@ import os
  
 if __name__ == '__main__':
 
-    root_path = r'/ns_data/projets/yolo_family_with_deploy'
-    model_yaml_path = os.path.join(root_path, r'/yolov11/ultralyticsx/cfg/models/11/yolo11s.yaml')
+    root_path = r'/root/lanyun-tmp/projects/yolo_family_with_deploy'
+    model_yaml_path = os.path.join(root_path, r'yolov11/ultralyticsx/cfg/models/11/yolo11s.yaml')
     pretrained_weights_path = os.path.join(root_path, r'/resources/models/yolov11/yolo11s.pt')
-    data_yaml_path = os.path.join(root_path, r'/yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml')
+    data_yaml_path = os.path.join(root_path, r'yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml')
+
+
+    print(model_yaml_path)
+    print(pretrained_weights_path)
+    print(data_yaml_path)
+
+
+    # model_yaml_path = model_yaml_path.replace('/', "\\")
+    # pretrained_weights_path = pretrained_weights_path.replace('/', "\\")
+    # data_yaml_path = data_yaml_path.replace('/', "\\")
+
+
+    import os, re
+    from pathlib import Path
+    path = Path(model_yaml_path)
+    unified_path = re.sub(r"(\d+)([nslmx])(.+)?$", r"\1\3", str(path))
+    print(unified_path)
+
 
     model = YOLO(model_yaml_path)
     # /ns_data/projets/yolo_family_with_deploy/yolov11/ultralyticsx/cfg/models/11/yolo11s.yaml
@@ -22,10 +40,10 @@ if __name__ == '__main__':
                 # /ns_data/projets/yolo_family_with_deploy/yolov11/case_tasks/runs/detect/tune12/best_hyperparameters.yaml
                 # 如果大家任务是其它的'ultralytics/cfg/default.yaml'找到这里修改task可以改成detect, segment, classify, pose
                 cache="ram",
-                imgsz=1120,
+                imgsz=640,
                 epochs=500,
                 #single_cls=False,  # 是否是单类别检测
-                batch=24,
+                batch=8,
                 #close_mosaic=0,
                 device='0',
                 #optimizer='SGD', # using SGD 优化器 默认为auto建议大家使用固定的.

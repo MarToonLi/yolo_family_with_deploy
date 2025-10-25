@@ -51,3 +51,9 @@ if __name__ == "__main__":
     
     # 检查图像 shape
     check_image_shapes(image_paths)
+
+    import re
+
+    path = Path(r"\root\lanyun-tmp\projects\yolo_family_with_deploy\yolov11\ultralyticsx\cfg\models\11\yolo11s.yaml")
+    unified_path = re.sub(r"(\d+)([nslmx])(.+)?$", r"\1\3", str(path))
+    print(unified_path)
