@@ -465,12 +465,12 @@ def parse_opt(known=False):
         root = r"/root/lanyun-tmp/projects/yolo_family_with_deploy"
         # /ns_data/projets/yolo_family_with_deploy/resources/models/yolov5/yolov5s.pt
         # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp14/weights/best.pt")
-        weights = os.path.join(root, r"resources/models/yolov5/yolov5s.pt")
+        weights = os.path.join(root, r"yolov5_7.0/runs/train/exp42/weights/best.pt")
         cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5s.yaml")
         data    = os.path.join(root, "yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml")
         # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp.scratch-low.yaml")
-        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1126.yaml")
-    print("mark: 202504241232")
+        # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1126.yaml")
+        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_little.yaml")
     
     parser = argparse.ArgumentParser()
     # 最为常用的参数
@@ -485,7 +485,7 @@ def parse_opt(known=False):
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640,                       help='train, val image size (pixels)')
     parser.add_argument('--optimizer',       type=str, choices=['SGD', 'Adam', 'AdamW'], default='Adam', help='optimizer')
     parser.add_argument('--cos-lr',          action='store_true',                                       help='cosine LR scheduler')
-    parser.add_argument('--patience',        type=int, default=500,                                     help='EarlyStopping patience (epochs without improvement)')
+    parser.add_argument('--patience',        type=int, default=50,                                     help='EarlyStopping patience (epochs without improvement)')
     parser.add_argument('--freeze',          nargs='+', type=int, default=[0],                          help='Freeze layers: backbone=10, first3=0 1 2')
     parser.add_argument('--save-period',     type=int, default=-1,                                      help='Save checkpoint every x epochs (disabled if < 1)')
     parser.add_argument('--seed',            type=int, default=0,                                       help='Global training seed')

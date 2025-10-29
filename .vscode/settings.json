@@ -2,5 +2,8 @@
     "cmake.sourceDirectory": "F:/Projects/yolo_family/yolov5_cpp_deploy",
     "python.analysis.extraPaths": [
     "F:\\Projects\\yolo_family\\yolov11\\ultralytics"
-]
+],
+"python-envs.defaultEnvManager": "ms-python.python:conda",
+"python-envs.defaultPackageManager": "ms-python.python:conda",
+"python-envs.pythonProjects": []
 }
