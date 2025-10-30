@@ -515,7 +515,7 @@ def parse_opt(known=False):
     
     
     # DDP和多GPU等相关
-    parser.add_argument('--device',          default="0",                                                help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device',          default=0,                                                help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--resume',          nargs='?', const=True, default=False,                      help='resume most recent training')    # 断点续训
     parser.add_argument('--nosave',          action='store_true',                                       help='only save final checkpoint')
     parser.add_argument('--noval',           action='store_true',                                       help='only validate final epoch')
@@ -633,6 +633,7 @@ def main(opt, callbacks=Callbacks()):
         if opt.noautoanchor:                                                 # ! 直接删除hyp和meta中对应键值对  
             del hyp['anchors'], meta['anchors']                              # todo: meta和hyp的结构一致，作用分别是什么？
         opt.noval, opt.nosave, save_dir = True, True, Path(opt.save_dir)     # ! only val/save final epoch, 因此我的val设置成train一样，对训练结果也没有什么影响！
+        # comment: opt.noval设置为True，表示只在最后一个epoch进行验证，这样可以节省训练时间，尤其是在超参数优化过程中。
         # ei = [isinstance(x, (int, float)) for x in hyp.values()]  # evolvable indices
         evolve_yaml, evolve_csv = save_dir / 'hyp_evolve.yaml', save_dir / 'evolve.csv'
         if opt.bucket:
@@ -696,6 +697,7 @@ def run(**kwargs):
 
 if __name__ == "__main__":
     opt = parse_opt()  
+    opt.evolve = 25
     print("opt.hyp: ", opt.hyp)
     main(opt)
     print()
