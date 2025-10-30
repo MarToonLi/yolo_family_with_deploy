@@ -466,13 +466,11 @@ def parse_opt(known=False):
     else:
         root = r"/root/lanyun-tmp/projects/yolo_family_with_deploy"
         # /ns_data/projets/yolo_family_with_deploy/resources/models/yolov5/yolov5s.pt
-        # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp14/weights/best.pt")
-        weights = os.path.join(root, r"yolov5_7.0/runs/train/exp42/weights/best.pt")
-        cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5s.yaml")
+        weights = os.path.join(root, r"resources/models/yolov5/yolov5m.pt")
+        cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5m.yaml")
         data    = os.path.join(root, "yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml")
-        # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp.scratch-low.yaml")
+        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp.scratch-low.yaml")
         # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1126.yaml")
-        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_little.yaml")
     
 
     # 创建ArgumentParser对象

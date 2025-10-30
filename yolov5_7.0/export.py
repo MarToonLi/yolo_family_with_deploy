@@ -651,8 +651,8 @@ if __name__ == "__main__":
     opt = parse_opt()
     
     ### ==================  onnx导出相关修改  ====================== ###
-    opt.data = r"/ns_data/projets/yolo_family_with_deploy/yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml"
-    opt.weights = r"/ns_data/projets/yolo_family_with_deploy/yolov5_7.0/runs/train/exp3/weights/best.pt"
+    opt.data = r"/root/lanyun-tmp/projects/yolo_family_with_deploy/yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml"
+    opt.weights = r"/root/lanyun-tmp/projects/yolo_family_with_deploy/yolov5_7.0/runs/train/exp42/weights/best.pt"
     opt.device = "0"
     opt.imgsz = [1120, 1120]
     opt.dynamic = False   
