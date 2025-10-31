@@ -67,7 +67,7 @@ class Callbacks:
             thread: (boolean) Run callbacks in daemon thread
             kwargs: Keyword Arguments to receive from YOLOv5
         """
-
+        # 当执行某个hook时，调用所有注册在该hook下的回调函数
         assert hook in self._callbacks, f"hook '{hook}' not found in callbacks {self._callbacks}"
         for logger in self._callbacks[hook]:
             if thread:

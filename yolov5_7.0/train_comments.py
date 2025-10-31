@@ -117,6 +117,28 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
     names = {0: 'item'} if single_cls and len(data_dict['names']) != 1 else data_dict['names']  # class names
     is_coco = isinstance(val_path, str) and val_path.endswith('coco/val2017.txt')  # COCO dataset
 
+
+    def check_two_statedicts(pretrained_keys, model_keys):
+        # 1. 两边都有的 key（可匹配的层，通常是能成功加载的）
+        common_keys = pretrained_keys & model_keys
+
+        # 2. 只在预训练权重中存在（预训练有，当前模型没有）
+        only_in_pretrained = pretrained_keys - model_keys
+
+        # 3. 只在当前模型中存在（当前模型有，预训练没有）
+        only_in_model = model_keys - pretrained_keys
+
+        # LOGGER.debug(f"Common keys ({len(common_keys)}): {common_keys}")
+        LOGGER.info(f"Only in pretrained ({len(only_in_pretrained)}): {only_in_pretrained}")
+        LOGGER.info(f"Only in model ({len(only_in_model)}): {only_in_model}")
+
+        # 输出彼此的元素数量
+        LOGGER.info(f"Number of common keys: {len(common_keys)}")
+        LOGGER.info(f"Number of keys in pretrained: {len(pretrained_keys)}")
+        LOGGER.info(f"Number of keys in model: {len(model_keys)}")
+
+
+
     # Model
     check_suffix(weights, '.pt')  # check weights
     pretrained = weights.endswith('.pt')
@@ -129,14 +151,19 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
         csd = ckpt['model'].float().state_dict()                                    # ! checkpoint state_dict as FP32 (float32)
         csd = intersect_dicts(csd, model.state_dict(), exclude=exclude)             # ? intersect 交叉 去除head部分的内容
         #? 模型规模都一致，但是为什么还存在不一致的网络层呢？
+        check_two_statedicts(set(csd.keys()), set(model.state_dict().keys()))
+
         model.load_state_dict(csd, strict=False)  # load
         LOGGER.info(f'Transferred {len(csd)}/{len(model.state_dict())} items from {weights}')  # report
     else:
         model = Model(cfg, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)      # create
     amp = check_amp(model)                                                          # ! check AMP 通过检查两个张量是否在某个容忍度范围内近似相等
+    # amp 的启用是根据模型在全精度和混合精度下的误差值大小来决定。 
 
     # Freeze
     freeze = [f'model.{x}.' for x in (freeze if len(freeze) > 1 else range(freeze[0]))]  # layers to freeze
+    # freeze: 要么指定具体的层名称，要么指定一个整数，表示从头开始冻结多少层
+
     for k, v in model.named_parameters():
         v.requires_grad = True  # train all layers
         # v.register_hook(lambda x: torch.nan_to_num(x))  # NaN to 0 (commented for erratic training results) （因训练结果不稳定而评论）
@@ -464,8 +491,8 @@ def parse_opt(known=False):
         root = r"D:\ProjectsRelated\CoreProjects\yolo_family_with_deploy"
         weights = os.path.join(root, "resources\models\yolov5\yolov5s.pt")
         cfg     = os.path.join(root, "yolov5_7.0\models/apple_3_7/yolov5s.yaml")
-        data    = os.path.join(root, "yolov5_7.0\data/cable/apple_3_7_train.yaml")
-        hyp     = os.path.join(root, "yolov5_7.0\data/hyps/apple_3_7_hyp_evolve.yaml")
+        data    = os.path.join(root, "yolov5_7.0\data/cable/apple_3_7_jpg_train.yaml")
+        hyp     = os.path.join(root, "yolov5_7.0\data/hyps/apple_3_7_hyp_evolve_20251024_1126.yaml")
     else:
         root = r"/root/lanyun-tmp/projects/yolo_family_with_deploy"
         # /ns_data/projets/yolo_family_with_deploy/resources/models/yolov5/yolov5s.pt
