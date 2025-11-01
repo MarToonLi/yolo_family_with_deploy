@@ -797,7 +797,7 @@ def ray_main(opt, callbacks=Callbacks()):
             sys.exit(1)
 
 
-        max_generations = 25
+        max_generations = 10
         gpus_per_trial = 1  #! 仅考虑单GPU的情况
         cpus_per_trial = 4
         opt.workers = cpus_per_trial
@@ -823,7 +823,7 @@ def ray_main(opt, callbacks=Callbacks()):
                     # metric="recall",  # 与train函数中tune.report的metric名称对应；与tuneconfig中的metric只能存在一个
                     # mode="max",
                     max_t=max_generations,
-                    grace_period=10,
+                    grace_period=5,
                     time_attr="training_iteration",
                     reduction_factor=2),
                 num_samples=trials,
