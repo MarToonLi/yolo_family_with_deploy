@@ -467,7 +467,8 @@ def parse_opt(known=False):
         root = r"/root/lanyun-tmp/projects/yolo_family_with_deploy"
         # /ns_data/projets/yolo_family_with_deploy/resources/models/yolov5/yolov5s.pt
         # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp14/weights/best.pt")
-        weights = os.path.join(root, r"yolov5_7.0/runs/train/exp42/weights/best.pt")
+        # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp42/weights/best.pt")
+        weights = os.path.join(root, "resources/models/yolov5/yolov5s.pt")
         cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5s.yaml")
         data    = os.path.join(root, "yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml")
         # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp.scratch-low.yaml")
@@ -520,7 +521,7 @@ def parse_opt(known=False):
     parser.add_argument('--bucket',          type=str, default='',                                      help='gsutil bucket')
     parser.add_argument('--single-cls',      action='store_true',                                       help='train multi-class data as single-class')
     parser.add_argument('--sync-bn',         action='store_true',                                       help='use SyncBatchNorm, only available in DDP mode')
-    parser.add_argument('--workers',         type=int, default=8,                                       help='max dataloader workers (per RANK in DDP mode)')
+    parser.add_argument('--workers',         type=int, default=6,                                       help='max dataloader workers (per RANK in DDP mode)')
     parser.add_argument('--local_rank',      type=int, default=-1,                                      help='Automatic DDP Multi-GPU argument, do not modify')
     parser.add_argument('--quad',            action='store_true',                                       help='quad dataloader')
 
