@@ -503,9 +503,9 @@ def parse_opt(known=False):
         cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5s.yaml")
         data    = os.path.join(root, "yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml")
         # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp.scratch-low.yaml")
-        # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1126.yaml")
-        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_little.yaml")
-        project = os.path.join(root, "yolov5_7.0/runs/train")
+        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1126.yaml")
+        # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_little.yaml")
+        # project = os.path.join(root, "yolov5_7.0/runs/train")
     
 
     # 创建ArgumentParser对象
