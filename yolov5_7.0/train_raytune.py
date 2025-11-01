@@ -505,7 +505,7 @@ def parse_opt(known=False):
         # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp.scratch-low.yaml")
         hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1126.yaml")
         # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_little.yaml")
-        # project = os.path.join(root, "yolov5_7.0/runs/train")
+        project = os.path.join(root, "yolov5_7.0/runs/train")
     
 
     # 创建ArgumentParser对象
@@ -760,8 +760,8 @@ def ray_main(opt, callbacks=Callbacks()):
         # 定义超参数搜索空间
         default_space = {
             # 'optimizer': tune.choice(['SGD', 'Adam', 'AdamW', 'NAdam', 'RAdam', 'RMSProp']),
-            "lr0": tune.uniform(1e-5, 1e-1),
-            "lrf": tune.uniform(0.01, 1.0),  # final OneCycleLR learning rate (lr0 * lrf)
+            "lr0": tune.uniform(1e-4, 1e-2),
+            "lrf": tune.uniform(0.01, 0.1),  # final OneCycleLR learning rate (lr0 * lrf)
             "momentum": tune.uniform(0.6, 0.98),  # SGD momentum/Adam beta1
             # "weight_decay": tune.uniform(0.0, 0.001),  # optimizer weight decay
             # "warmup_epochs": tune.uniform(0.0, 5.0),  # warmup epochs (fractions ok)
@@ -771,15 +771,15 @@ def ray_main(opt, callbacks=Callbacks()):
             # "hsv_h": tune.uniform(0.0, 0.1),  # image HSV-Hue augmentation (fraction)
             # "hsv_s": tune.uniform(0.0, 0.9),  # image HSV-Saturation augmentation (fraction)
             # "hsv_v": tune.uniform(0.0, 0.9),  # image HSV-Value augmentation (fraction)
-            "degrees": tune.uniform(0.0, 45.0),  # image rotation (+/- deg)
-            "translate": tune.uniform(0.0, 0.9),  # image translation (+/- fraction)
-            "scale": tune.uniform(0.0, 0.9),  # image scale (+/- gain)
+            "degrees": tune.randint(2, 10),  # image rotation (+/- deg)
+            "translate": tune.choice([round(x * 0.1, 1) for x in range(0, 11)]),  # image translation (+/- fraction)
+            "scale": tune.choice([round(x * 0.1, 1) for x in range(0, 11)]),  # image scale (+/- gain)
             # "shear": tune.uniform(0.0, 10.0),  # image shear (+/- deg)
             # "perspective": tune.uniform(0.0, 0.001),  # image perspective (+/- fraction), range 0-0.001
-            "flipud": tune.uniform(0.0, 1.0),  # image flip up-down (probability)
-            "fliplr": tune.uniform(0.0, 1.0),  # image flip left-right (probability)
+            "flipud": tune.choice([round(x * 0.1, 1) for x in range(0, 11)]),  # image flip up-down (probability)
+            "fliplr": tune.choice([round(x * 0.1, 1) for x in range(0, 11)]),  # image flip left-right (probability)
             # "bgr": tune.uniform(0.0, 1.0),  # image channel BGR (probability)
-            "mosaic": tune.uniform(0.0, 1.0),  # image mosaic (probability)
+            "mosaic": tune.choice([round(x * 0.1, 1) for x in range(0, 11)]),  # image mosaic (probability)
             # "mixup": tune.uniform(0.0, 1.0),  # image mixup (probability)
             # "cutmix": tune.uniform(0.0, 1.0),  # image cutmix (probability)
             # "copy_paste": tune.uniform(0.0, 1.0),  # segment copy-paste (probability)
@@ -799,7 +799,7 @@ def ray_main(opt, callbacks=Callbacks()):
 
         max_generations = 10
         gpus_per_trial = 1  #! 仅考虑单GPU的情况
-        cpus_per_trial = 4
+        cpus_per_trial = 6
         opt.workers = cpus_per_trial
         opt.device = "0"
         device = torch.device('cuda:0')
@@ -823,7 +823,7 @@ def ray_main(opt, callbacks=Callbacks()):
                     # metric="recall",  # 与train函数中tune.report的metric名称对应；与tuneconfig中的metric只能存在一个
                     # mode="max",
                     max_t=max_generations,
-                    grace_period=5,
+                    grace_period=2,
                     time_attr="training_iteration",
                     reduction_factor=2),
                 num_samples=trials,
