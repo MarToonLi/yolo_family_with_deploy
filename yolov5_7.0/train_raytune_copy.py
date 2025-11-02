@@ -494,7 +494,7 @@ def parse_opt(known=False):
         cfg     = os.path.join(root, "yolov5_7.0\models/apple_3_7/yolov5s.yaml")
         data    = os.path.join(root, "yolov5_7.0\data/cable/apple_3_7_jpg_train.yaml")
         hyp     = os.path.join(root, "yolov5_7.0\data/hyps/apple_3_7_hyp_evolve.yaml")
-        project = os.path.join(root, "yolov5_7.0/runs/evolve_ray")
+        project = os.path.join(root, "yolov5_7.0/runs/train")
     else:
         root = r"/root/lanyun-tmp/projects/yolo_family_with_deploy"
         # /ns_data/projets/yolo_family_with_deploy/resources/models/yolov5/yolov5s.pt
@@ -506,7 +506,7 @@ def parse_opt(known=False):
         # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp.scratch-low.yaml")
         hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1126.yaml")
         # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_little.yaml")
-        project = os.path.join(root, "yolov5_7.0/runs/evolve_ray")
+        project = os.path.join(root, "yolov5_7.0/runs/train")
     
 
     # 创建ArgumentParser对象
@@ -727,13 +727,15 @@ def ray_main(opt, callbacks=Callbacks()):
     opt.data, opt.cfg, opt.hyp, opt.weights, opt.project = \
         check_file(opt.data), check_yaml(opt.cfg), check_yaml(opt.hyp), str(opt.weights), str(opt.project)  # checks
     assert len(opt.cfg) or len(opt.weights), 'either --cfg or --weights must be specified'
-    if opt.evolve:
-        # if opt.project == str(ROOT / 'runs/train'):  # if default project name, rename to runs/evolve
-            # opt.project = str(ROOT / 'runs/evolve')
-        opt.project = opt.project.replace("train", "evolve")
+
+    # ray: 更换save_dir路径，raytune数据和最终训练的结果都放在这里
+    if opt.raytune:
+        if opt.project == str(ROOT / 'runs/train'):  # if default project name, rename to runs/evolve
+            opt.project = str(ROOT / 'runs/evolve_ray')
+        opt.project = opt.project.replace("train", "evolve_ray")
         opt.exist_ok, opt.resume = opt.resume, False  # pass resume to exist_ok and disable resume
-    if opt.name == 'cfg':
-        opt.name = Path(opt.cfg).stem  # use model.yaml as name   # stem返回路径的文件名部分，不包括扩展名； 默认地opt中为exp
+    # if opt.name == 'cfg':
+        # opt.name = Path(opt.cfg).stem  # use model.yaml as name   # stem返回路径的文件名部分，不包括扩展名； 默认地opt中为exp
     opt.save_dir = str(increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok))  # 初始化save_dir到opt
 
     # DDP mode
@@ -748,16 +750,11 @@ def ray_main(opt, callbacks=Callbacks()):
 
     # ===============================================================================================
     # Train
-    if not opt.evolve:
+    if not opt.raytune:
         ray_train(config, default_config, opt, device, callbacks)
 
     # 使用 Ray Tune进行超参数优化
     else:
-        opt.project = opt.project.replace("evolve", "evolve_ray")
-        # 检查路径是否存在，不存在则创建
-        save_dir = Path(opt.project)
-        save_dir.mkdir(parents=True, exist_ok=True)
-        # ray.init(tmp_dir=opt.project.replace("evolve", "evolve_ray"))  # 初始化Ray运行环境，指定临时文件存储路径
 
         # 定义超参数搜索空间
         default_space = {
@@ -787,10 +784,6 @@ def ray_main(opt, callbacks=Callbacks()):
             # "copy_paste": tune.uniform(0.0, 1.0),  # segment copy-paste (probability)
         }  
 
-        # 定义搜索算法和调度器
-        algo = OptunaSearch()
-
-
         # 定义ray.tune的控制参数
         # 定义最大训练代数
         if not torch.cuda.is_available():
@@ -798,18 +791,35 @@ def ray_main(opt, callbacks=Callbacks()):
             print("No GPU found, exiting...")
             sys.exit(1)
 
+        if check_os() == "Windows":
+            max_generations = 3
+            gpus_per_trial = 1  #! 仅考虑单GPU的情况
+            cpus_per_trial = 8
+            opt.workers = cpus_per_trial
+            opt.device = "0"
+            device = torch.device('cuda:0')
+            trials = 2
+            grace_period = 2
+        else:
+            max_generations = 10
+            gpus_per_trial = 1  #! 仅考虑单GPU的情况
+            cpus_per_trial = 6
+            opt.workers = cpus_per_trial
+            opt.device = "0"
+            device = torch.device('cuda:0')
+            trials = 30
+            grace_period = 2
 
-        max_generations = 10
-        gpus_per_trial = 1  #! 仅考虑单GPU的情况
-        cpus_per_trial = 6
-        opt.workers = cpus_per_trial
-        opt.device = "0"
-        device = torch.device('cuda:0')
-        trials = 30
 
+        # 检查路径是否存在，不存在则创建
+        save_dir = Path(opt.save_dir)
+        save_dir.mkdir(parents=True, exist_ok=True)
 
         tune_default_config = deepcopy(default_config)
         tune_opt = deepcopy(opt)
+
+        # 定义搜索算法和调度器
+        algo = OptunaSearch()
 
         # 创建Tuner并运行超参数优化
         tuner = tune.Tuner(
@@ -825,7 +835,7 @@ def ray_main(opt, callbacks=Callbacks()):
                     # metric="recall",  # 与train函数中tune.report的metric名称对应；与tuneconfig中的metric只能存在一个
                     # mode="max",
                     max_t=max_generations,
-                    grace_period=2,
+                    grace_period=grace_period,
                     time_attr="training_iteration",
                     reduction_factor=2),
                 num_samples=trials,
@@ -834,25 +844,32 @@ def ray_main(opt, callbacks=Callbacks()):
             ),
             param_space=default_space,
             run_config=tune.RunConfig(
-                name=Path(opt.project).name,
-                storage_path=Path(opt.project).parent,
+                name=Path(opt.save_dir).name,
+                storage_path=Path(opt.save_dir).parent,
                 stop={"training_iteration": max_generations},
-                verbose=2,
+                verbose=1,
                 log_to_file=True,
             ),
         )
 
         LOGGER.info(f"opt.project: {opt.project}")
+        LOGGER.info(f"opt.save_dir: {opt.save_dir}")
 
         # 运行超参数优化
         results = tuner.fit()
 
         # 输出最佳结果
-        print("Best config is:", results.get_best_result().config)
+        best_config = results.get_best_result().config
+        LOGGER.info("Best config is:", best_config)
 
+        # 将config持久化到yaml文件中
+        with open(opt.save_dir / 'best_hyp.yaml', 'w') as f:
+            yaml.dump(best_config, f)
+
+        # 进行最终训练
         test_default_config = deepcopy(default_config)
         test_opt = deepcopy(opt)
-        ray_train(results.get_best_result().config, test_default_config,  test_opt, device, callbacks)
+        ray_train(best_config, test_default_config,  test_opt, device, callbacks)
 
 
 
@@ -876,7 +893,6 @@ if __name__ == "__main__":
         opt.nosave = True
         ray_main(opt)
     else:
-        # main(opt)
         ray_main(opt)
 
     print()
