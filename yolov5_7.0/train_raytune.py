@@ -1,18 +1,16 @@
-# YOLOv5 🚀 by Ultralytics, GPL-3.0 license
+# YOLOv5 🚀 by tong, 20251104
 """
-Train a YOLOv5 model on a custom dataset.
-Models and datasets download automatically from the latest YOLOv5 release.
+Train a YOLOv5 model on a custom dataset by modifying train.py to support Ray Tune HPO.
 
 Usage - Single-GPU training:
-    $ python train.py --data coco128.yaml --weights yolov5s.pt --img 640  # from pretrained (recommended)
-    $ python train.py --data coco128.yaml --weights '' --cfg yolov5s.yaml --img 640  # from scratch
+    $ python train_raytune_copy.py --device 0 --batch 24 --imgsz 1120 --epochs 500 --cache --cos-lr  --image-weights 
+    --hyp '.../apple_3_7_hyp_evolve_20251024_1126.yaml' --data '.../apple_3_7_jpg_train.yaml' --cfg '.../yolov5s.yaml' --weights '.../yolov5s.pt'
+    #! 命令行只能调整部分parse_opt()中的参数,  还有其他的一些参数需要人为手动修改:
+    #! 1. 设置 opt.raytune = True；2. update default_space, max_generations, trials等参数
 
 Usage - Multi-GPU DDP training:
     $ python -m torch.distributed.run --nproc_per_node 4 --master_port 1 train.py --data coco128.yaml --weights yolov5s.pt --img 640 --device 0,1,2,3
 
-Models:     https://github.com/ultralytics/yolov5/tree/master/models
-Datasets:   https://github.com/ultralytics/yolov5/tree/master/data
-Tutorial:   https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data
 """
  
 import argparse
@@ -75,7 +73,7 @@ LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))     # LOCAL_RANK 通常用于指�
 RANK       = int(os.getenv('RANK', -1))           # RANK 表示当前进程在整个分布式训练中的全球排名，通常用于跨多个机器或节点的分布式训练。
 WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))      # WORLD_SIZE 代表分布式训练中总的进程数量或节点数量，即总的工作量大小。
 GIT_INFO = check_git_info()
-# input("ss")
+
 
 def ray_train(config, default_config, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictionary
     save_dir, epochs, batch_size, weights, single_cls, evolve, data, cfg, resume, noval, nosave, workers, freeze = \
@@ -92,6 +90,7 @@ def ray_train(config, default_config, opt, device, callbacks):  # hyp is path/to
     default_config.update(config)
     hyp = default_config
 
+    #! ray_train 替换 train: 超参数内容提前背读取
     # Hyperparameters
     # if isinstance(hyp, str):
     #     LOGGER.info(colorstr('hyperparameter file path: ') + hyp)
@@ -222,6 +221,9 @@ def ray_train(config, default_config, opt, device, callbacks):  # hyp is path/to
     labels = np.concatenate(dataset.labels, 0)
     mlc = int(labels[:, 0].max())  # max label class
     assert mlc < nc, f'Label class {mlc} exceeds nc={nc} in {data}. Possible class labels are 0-{nc - 1}'  #! 很有意思的一步
+    #! 输出dataset.albumentations.transform
+    if hasattr(dataset.albumentations, 'transform') and dataset.albumentations.transform is not None:
+        LOGGER.info(f"{colorstr('train: ')}albumentations.transform: {dataset.albumentations.transform}")
 
     # Process 0
     if RANK in {-1, 0}:
@@ -249,7 +251,6 @@ def ray_train(config, default_config, opt, device, callbacks):  # hyp is path/to
     if cuda and RANK != -1:
         model = smart_DDP(model)
 
-    # todo: 什么意思？
     # Model attributes
     nl = de_parallel(model).model[-1].nl       # number of detection layers (to scale hyps)
     hyp['box'] *= 3 / nl                       # scale to layers
@@ -267,7 +268,7 @@ def ray_train(config, default_config, opt, device, callbacks):  # hyp is path/to
     nw = max(round(hyp['warmup_epochs'] * nb), 100)  # number of warmup iterations, max(3 epochs, 100 iterations), 有讲究，本质看迭代数
     # nw = min(nw, (epochs - start_epoch) / 2 * nb)  # limit warmup to < 1/2 of training
     last_opt_step = -1
-    maps = np.zeros(nc)                                             # todo: mAP per class
+    maps = np.zeros(nc)                                             # todo: mAP per class 记录当前模型对每种类别的检测效果mAP值，用于image-eights
     results = (0, 0, 0, 0, 0, 0, 0)                                 # P, R, mAP@.5, mAP@.5-.95, val_loss(box, obj, cls)
     scheduler.last_epoch = start_epoch - 1                          # do not move
     scaler = torch.cuda.amp.GradScaler(enabled=amp)
@@ -392,17 +393,16 @@ def ray_train(config, default_config, opt, device, callbacks):  # hyp is path/to
 
 
 
-            # Report metrics
-            metrics = {
-                "precision": results[0],
-                "recall": results[1],
-                "mAP@.5": results[2],
-                "mAP@.5-.95": results[3],
-                "fitness": fi[0]
-            }
-
-            # 避免非ray.tune时报错
-            if opt.evolve:
+            #! Ray.tune: 避免非ray.tune时报错
+            if opt.raytune:
+                # Report metrics
+                metrics = {
+                    "precision": results[0],
+                    "recall": results[1],
+                    "mAP@.5": results[2],
+                    "mAP@.5-.95": results[3],
+                    "fitness": fi[0]
+                }
                 tune.report(metrics)
 
 
@@ -485,41 +485,48 @@ def check_os():
     #         return "Linux (非 Ubuntu)"
     else:
         return "其他操作系统"
+    
+def check_lanyun_env():
+    # 检查 /root/lanyun-tmp/ 路径是否存在，以判断是否在蓝云环境中运行
+    lanyun_path = "/root/lanyun-tmp/"
+    return os.path.exists(lanyun_path)
+
 
 
 def parse_opt(known=False):
-    if check_os() == "Windows":
+
+    #! 设置yolo.train 参数 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    if check_os() == "Windows":  # 本机调试环境
         root = r"D:\ProjectsRelated\CoreProjects\yolo_family_with_deploy"
         weights = os.path.join(root, "resources\models\yolov5\yolov5s.pt")
         cfg     = os.path.join(root, "yolov5_7.0\models/apple_3_7/yolov5s.yaml")
         data    = os.path.join(root, "yolov5_7.0\data/cable/apple_3_7_jpg_train.yaml")
         hyp     = os.path.join(root, "yolov5_7.0\data/hyps/apple_3_7_hyp_evolve.yaml")
-        project = os.path.join(root, "yolov5_7.0/runs/evolve_ray")
-    else:
+        project = os.path.join(root, "yolov5_7.0/runs/train")
+    elif check_lanyun_env():      # 蓝耘环境
         root = r"/root/lanyun-tmp/projects/yolo_family_with_deploy"
-        # /ns_data/projets/yolo_family_with_deploy/resources/models/yolov5/yolov5s.pt
         # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp14/weights/best.pt")
         # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp42/weights/best.pt")
         weights = os.path.join(root, r"resources/models/yolov5/yolov5m.pt")
         cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5m.yaml")
         data    = os.path.join(root, "yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml")
-        # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp.scratch-low.yaml")
-        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1126.yaml")
-        # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_little.yaml")
-        project = os.path.join(root, "yolov5_7.0/runs/evolve_ray")
+        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1127.yaml")
+        project = os.path.join(root, "yolov5_7.0/runs/train")
+    else:                      # 其他Linux环境，直接退出
+        sys.exit("当前环境非Windows且非蓝云环境，程序退出！请根据实际情况修改train_raytune.py中的默认路径参数。")
+        sys.exit(0)
     
 
     # 创建ArgumentParser对象
     parser = argparse.ArgumentParser()
-    # 最为常用的参数
-    # /home/python_projects/yolo_family_with_deploy/yolov5_7.0/runs/train/exp8/weights/best.pt
+    #? 最为常用的参数: 默认参数，默认全部为本地运行服务(很重要的原则)
     # ROOT / 'runs/train/exp8/weights/best.pt'
-    parser.add_argument('--weights',         type=str, default=weights,          help='initial weights path')
+    parser.add_argument('--weights',         type=str, default=weights,          help='initial weights path')  
     parser.add_argument('--cfg',             type=str, default=cfg ,             help='模型配置文件路径')
     parser.add_argument('--data',            type=str, default=data,             help='dataset.yaml path')
     parser.add_argument('--hyp',             type=str, default=hyp ,             help='训练超参数配置文件路径')
-    parser.add_argument('--epochs',          type=int, default=500,                                     help='total training epochs')  
-    parser.add_argument('--batch-size',      type=int, default=24,                                       help='total batch size for all GPUs, -1 for autobatch')
+    parser.add_argument('--epochs',          type=int, default=5,                                     help='total training epochs')  
+    parser.add_argument('--batch-size',      type=int, default=12,                                       help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640,                       help='train, val image size (pixels)')
     parser.add_argument('--optimizer',       type=str, choices=['SGD', 'Adam', 'AdamW'], default='Adam', help='optimizer')
     parser.add_argument('--cos-lr',          action='store_true',                                       help='cosine LR scheduler')
@@ -530,34 +537,34 @@ def parse_opt(known=False):
     
     
     # 训练结果名称控制    
-    parser.add_argument('--project',         default=project,                               help='save to project/name')  # 设置每次训练结果保存的主路径名称
-    parser.add_argument('--name',            default='exp',                                             help='save to project/name')  # 子路径名称
-    parser.add_argument('--exist-ok',        action='store_true',                                       help='existing project/name ok, do not increment') # 是否覆盖同名的训练结果保存路径，默认关闭，表示不覆盖
+    parser.add_argument('--project',         default=project,                          help='save to project/name')  # 设置每次训练结果保存的主路径名称
+    parser.add_argument('--name',            default='exp',                            help='save to project/name')  # 子路径名称
+    parser.add_argument('--exist-ok',        action='store_true',                      help='existing project/name ok, do not increment') # 是否覆盖同名的训练结果保存路径，默认关闭，表示不覆盖
 
     
     # trick参数
-    parser.add_argument('--rect',            action='store_true',                                       help='[trick] rectangular training')   # 矩形训练，默认关闭 
-    parser.add_argument('--noautoanchor',    action='store_true',                                       help='[trick] disable AutoAnchor')    #? 关闭自动计算锚框功能，默认关闭，即会自动计算
-    parser.add_argument('--evolve',          type=int, nargs='?', const=300,                            help='[trick] evolve hyperparameters for x generations')  # ? 使用超参数优化算法进行自动调参
-    parser.add_argument('--raytune',         action='store_true',                                       help='[trick] evolve hyperparameters for x generations by raytune')  # ? 使用超参数优化算法进行自动调参
-    parser.add_argument('--cache',           type=str, nargs='?', const='ram',                          help='[trick] image --cache ram/disk')        # 缓存数据集，默认关闭
-    parser.add_argument('--image-weights',   action='store_true',                                       help='[trick] use weighted image selection for training')  #? 对数据集图片进行加权训练
-    parser.add_argument('--multi-scale',     action='store_true',                                       help='[trick] vary img-size +/- 50%%')    # 多尺度训练，训练过程中每次输入图片会放大或缩小50%。
-    parser.add_argument('--label-smoothing', type=float, default=0.1,                                   help='[trick] Label smoothing epsilon') # 表示在每个标签的真实概率上添加一个 epsilon=0.1的噪声，从而使模型对标签的波动更加鲁棒；
+    parser.add_argument('--rect',            action='store_true',                      help='[trick] rectangular training')   # 矩形训练，默认关闭 
+    parser.add_argument('--noautoanchor',    action='store_true',                      help='[trick] disable AutoAnchor')    #? 常用: 关闭自动计算锚框功能，默认关闭，即会自动计算
+    parser.add_argument('--evolve',          type=int, nargs='?', const=300,           help='[trick] (depreciated) evolve hyperparameters for x generations')  # ? 使用超参数优化算法进行自动调参（在当前文件中不起作用）
+    parser.add_argument('--raytune',         action='store_true',                      help='[trick] evolve hyperparameters for x generations by raytune')  # ? 常用: 使用超参数优化算法进行自动调参
+    parser.add_argument('--cache',           type=str, nargs='?', const='ram',         help='[trick] image --cache ram/disk')        #? 常用: 缓存数据集，默认关闭
+    parser.add_argument('--image-weights',   action='store_true',                      help='[trick] use weighted image selection for training')  #? 常用: 对数据集图片进行加权训练
+    parser.add_argument('--multi-scale',     action='store_true',                      help='[trick] vary img-size +/- 50%%')    # 多尺度训练，训练过程中每次输入图片会放大或缩小50%。
+    parser.add_argument('--label-smoothing', type=float, default=0.1,                  help='[trick] Label smoothing epsilon')   # 表示在每个标签的真实概率上添加一个 epsilon=0.1的噪声，从而使模型对标签的波动更加鲁棒；
     
     
     # DDP和多GPU等相关
-    parser.add_argument('--device',          default="0",                                                help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-    parser.add_argument('--resume',          nargs='?', const=True, default=False,                      help='resume most recent training')    # 断点续训
-    parser.add_argument('--nosave',          action='store_true',                                       help='only save final checkpoint')
-    parser.add_argument('--noval',           action='store_true',                                       help='only validate final epoch')
-    parser.add_argument('--noplots',         action='store_true',                                       help='save no plot files')
-    parser.add_argument('--bucket',          type=str, default='',                                      help='gsutil bucket')
-    parser.add_argument('--single-cls',      action='store_true',                                       help='train multi-class data as single-class')
-    parser.add_argument('--sync-bn',         action='store_true',                                       help='use SyncBatchNorm, only available in DDP mode')
-    parser.add_argument('--workers',         type=int, default=8,                                       help='max dataloader workers (per RANK in DDP mode)')
-    parser.add_argument('--local_rank',      type=int, default=-1,                                      help='Automatic DDP Multi-GPU argument, do not modify')
-    parser.add_argument('--quad',            action='store_true',                                       help='quad dataloader')
+    parser.add_argument('--device',          default="0",                              help='cuda device, i.e. 0 or 0,1,2,3 or cpu')  #? 常用: 单GPU训练时指定GPU编号，多GPU训练时指定多个GPU编号，CPU训练时指定cpu
+    parser.add_argument('--resume',          nargs='?', const=True, default=False,     help='resume most recent training')    # 断点续训
+    parser.add_argument('--nosave',          action='store_true',                      help='only save final checkpoint')
+    parser.add_argument('--noval',           action='store_true',                      help='only validate final epoch')
+    parser.add_argument('--noplots',         action='store_true',                      help='save no plot files')
+    parser.add_argument('--bucket',          type=str, default='',                     help='gsutil bucket')
+    parser.add_argument('--single-cls',      action='store_true',                      help='train multi-class data as single-class')
+    parser.add_argument('--sync-bn',         action='store_true',                      help='use SyncBatchNorm, only available in DDP mode')
+    parser.add_argument('--workers',         type=int, default=8,                      help='max dataloader workers (per RANK in DDP mode)')
+    parser.add_argument('--local_rank',      type=int, default=-1,                     help='Automatic DDP Multi-GPU argument, do not modify')
+    parser.add_argument('--quad',            action='store_true',                      help='quad dataloader')
 
 
     # Logger arguments
@@ -565,155 +572,10 @@ def parse_opt(known=False):
     parser.add_argument('--upload_dataset', nargs='?', const=True, default=False, help='Upload data, "val" option')
     parser.add_argument('--bbox_interval',  type=int, default=-1,                 help='Set bounding-box image logging interval') # 每隔多少个epoch记录一次带有边界框的图片
     parser.add_argument('--artifact_alias', type=str, default='latest',           help='Version of dataset artifact to use')
+    #! 设置yolo.train 参数 ----------------------------------------------------------------------------------------------------------
 
     # 解析命令行传入的参数：parser.parse_args()
     return parser.parse_known_args()[0] if known else parser.parse_args()
-
-
-def main(opt, callbacks=Callbacks()):
-    # Checks
-    if RANK in {-1, 0}:
-        print_args(vars(opt))
-        check_git_status()
-        check_requirements()   # 检查库是否存在，否则会自动安装
-
-    # Resume (from specified or most recent last.pt)
-    if opt.resume and not check_comet_resume(opt) and not opt.evolve:                               # 如果没有安装comet_ml，则取消视为False
-        last = Path(check_file(opt.resume) if isinstance(opt.resume, str) else get_latest_run())    # 在run文件中找到最新的last.pt文件；
-        opt_yaml = last.parent.parent / 'opt.yaml'  # train options yaml
-        opt_data = opt.data  # original dataset
-        if opt_yaml.is_file():
-            with open(opt_yaml, errors='ignore') as f:
-                d = yaml.safe_load(f)
-        else:
-            d = torch.load(last, map_location='cpu')['opt']
-        opt = argparse.Namespace(**d)  # replace
-        opt.cfg, opt.weights, opt.resume = '', str(last), True  # reinstate
-        if is_url(opt_data):
-            opt.data = check_file(opt_data)  # avoid HUB resume auth timeout
-    else:
-        opt.data, opt.cfg, opt.hyp, opt.weights, opt.project = \
-            check_file(opt.data), check_yaml(opt.cfg), check_yaml(opt.hyp), str(opt.weights), str(opt.project)  # checks
-        assert len(opt.cfg) or len(opt.weights), 'either --cfg or --weights must be specified'
-        if opt.evolve:
-            if opt.project == str(ROOT / 'runs/train'):  # if default project name, rename to runs/evolve
-                opt.project = str(ROOT / 'runs/evolve')
-            opt.exist_ok, opt.resume = opt.resume, False  # pass resume to exist_ok and disable resume
-        if opt.name == 'cfg':
-            opt.name = Path(opt.cfg).stem  # use model.yaml as name   # stem返回路径的文件名部分，不包括扩展名； 默认地opt中为exp
-        opt.save_dir = str(increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok))  # 初始化save_dir到opt
-
-    # DDP mode
-    device = select_device(opt.device, batch_size=opt.batch_size)
-    if LOCAL_RANK != -1:
-        msg = 'is not compatible with YOLOv5 Multi-GPU DDP training'
-        assert not opt.image_weights, f'--image-weights {msg}'
-        assert not opt.evolve, f'--evolve {msg}'
-        assert opt.batch_size != -1, f'AutoBatch with --batch-size -1 {msg}, please pass a valid --batch-size'
-        assert opt.batch_size % WORLD_SIZE == 0, f'--batch-size {opt.batch_size} must be multiple of WORLD_SIZE'  # ! batch_size need the multiple of WORLD_SIZE.
-        assert torch.cuda.device_count() > LOCAL_RANK, 'insufficient CUDA devices for DDP command'
-        torch.cuda.set_device(LOCAL_RANK)
-        device = torch.device('cuda', LOCAL_RANK)
-        dist.init_process_group(backend="nccl" if dist.is_nccl_available() else "gloo")
-
-    # ===============================================================================================
-    # Train
-    if not opt.evolve:
-        train(opt.hyp, opt, device, callbacks)
-
-    # Evolve hyperparameters (optional)
-    else:
-        # Hyperparameter evolution metadata (mutation scale 0-1, lower_limit, upper_limit)
-        meta = {
-            'lr0': (1, 1e-5, 1e-1),             # initial learning rate (SGD=1E-2, Adam=1E-3)
-            'lrf': (1, 0.01, 1.0),              # final OneCycleLR learning rate (lr0 * lrf)
-            'momentum': (0.3, 0.6, 0.98),       # SGD momentum/Adam beta1
-            'weight_decay': (1, 0.0, 0.001),    # optimizer weight decay
-            'warmup_epochs': (1, 0.0, 5.0),     # warmup epochs (fractions ok)
-            'warmup_momentum': (1, 0.0, 0.95),  # warmup initial momentum
-            'warmup_bias_lr': (1, 0.0, 0.2),    # warmup initial bias lr
-            'box': (1, 0.02, 0.2),      # box loss gain
-            'cls': (1, 0.2, 4.0),       # cls loss gain
-            'cls_pw': (1, 0.5, 2.0),    # cls BCELoss positive_weight
-            'obj': (1, 0.2, 4.0),       # obj loss gain (scale with pixels)
-            'obj_pw': (1, 0.5, 2.0),    # obj BCELoss positive_weight
-            'iou_t': (0, 0.1, 0.7),     # IoU training threshold
-            'anchor_t': (1, 2.0, 8.0),  # anchor-multiple threshold
-            'anchors': (2, 2.0, 10.0),  # anchors per output grid (0 to ignore)
-            'fl_gamma': (0, 0.0, 2.0),  # focal loss gamma (efficientDet default gamma=1.5)
-            'hsv_h': (1, 0.0, 0.1),          # image HSV-Hue augmentation (fraction)
-            'hsv_s': (1, 0.0, 0.9),          # image HSV-Saturation augmentation (fraction)
-            'hsv_v': (1, 0.0, 0.9),          # image HSV-Value augmentation (fraction)
-            'degrees': (1, 0.0, 45.0),       # image rotation (+/- deg)
-            'translate': (1, 0.0, 0.9),      # image translation (+/- fraction)
-            'scale': (1, 0.0, 0.9),          # image scale (+/- gain)
-            'shear': (1, 0.0, 10.0),         # image shear (+/- deg)
-            'perspective': (0, 0.0, 0.001),  # image perspective (+/- fraction), range 0-0.001
-            'flipud': (1, 0.0, 1.0),         # image flip up-down (probability)
-            'fliplr': (0, 0.0, 1.0),         # image flip left-right (probability)
-            'mosaic': (1, 0.0, 1.0),         # image mixup (probability)
-            'mixup': (1, 0.0, 1.0),          # image mixup (probability)
-            'copy_paste': (1, 0.0, 1.0)
-            }     # segment copy-paste (probability)
-        
-        with open(opt.hyp, errors='ignore') as f:                             
-            hyp = yaml.safe_load(f)  # load hyps dict
-            if 'anchors' not in hyp:  # anchors commented in hyp.yaml
-                hyp['anchors'] = 3
-        if opt.noautoanchor:                                                 # ! 直接删除hyp和meta中对应键值对  
-            del hyp['anchors'], meta['anchors']                              # todo: meta和hyp的结构一致，作用分别是什么？
-        opt.noval, opt.nosave, save_dir = True, True, Path(opt.save_dir)     # ! only val/save final epoch, 因此我的val设置成train一样，对训练结果也没有什么影响！
-        # ei = [isinstance(x, (int, float)) for x in hyp.values()]  # evolvable indices
-        evolve_yaml, evolve_csv = save_dir / 'hyp_evolve.yaml', save_dir / 'evolve.csv'
-        if opt.bucket:
-            os.system(f'gsutil cp gs://{opt.bucket}/evolve.csv {evolve_csv}')  # download evolve.csv if exists
-
-        for _ in range(opt.evolve):  # generations to evolve                 # 默认是第300个Epoch时执行优化
-            if evolve_csv.exists():  # if evolve.csv exists: select best hyps and mutate
-                # Select parent(s)
-                parent = 'single'  # parent selection method: 'single' or 'weighted'
-                x = np.loadtxt(evolve_csv, ndmin=2, delimiter=',', skiprows=1)
-                n = min(5, len(x))  # number of previous results to consider
-                x = x[np.argsort(-fitness(x))][:n]  # top n mutations
-                w = fitness(x) - fitness(x).min() + 1E-6  # weights (sum > 0)
-                if parent == 'single' or len(x) == 1:
-                    # x = x[random.randint(0, n - 1)]  # random selection
-                    x = x[random.choices(range(n), weights=w)[0]]  # weighted selection
-                elif parent == 'weighted':
-                    x = (x * w.reshape(n, 1)).sum(0) / w.sum()  # weighted combination
-
-                # Mutate
-                mp, s = 0.8, 0.2  # mutation probability, sigma
-                npr = np.random
-                npr.seed(int(time.time()))
-                g = np.array([meta[k][0] for k in hyp.keys()])  # gains 0-1                                    # todo: meta[k][0]
-                ng = len(meta)
-                v = np.ones(ng)
-                while all(v == 1):  # mutate until a change occurs (prevent duplicates)
-                    v = (g * (npr.random(ng) < mp) * npr.randn(ng) * npr.random() * s + 1).clip(0.3, 3.0)
-                for i, k in enumerate(hyp.keys()):  # plt.hist(v.ravel(), 300)
-                    hyp[k] = float(x[i + 7] * v[i])  # mutate
-
-            # Constrain to limits
-            for k, v in meta.items():
-                hyp[k] = max(hyp[k], v[1])  # lower limit                                                      # todo: meta[k][1]
-                hyp[k] = min(hyp[k], v[2])  # upper limit                                                      # todo: meta[k][2]
-                hyp[k] = round(hyp[k], 5)  # significant digits
-
-            # Train mutation
-            results = train(hyp.copy(), opt, device, callbacks)
-            callbacks = Callbacks()
-            # Write mutation results
-            keys = ('metrics/precision', 'metrics/recall', 'metrics/mAP_0.5', 'metrics/mAP_0.5:0.95', 'val/box_loss',
-                    'val/obj_loss', 'val/cls_loss')
-            print_mutation(keys, results, hyp.copy(), save_dir, opt.bucket)
-
-        # Plot results
-        plot_evolve(evolve_csv)
-        LOGGER.info(f'Hyperparameter evolution finished {opt.evolve} generations\n'
-                    f"Results saved to {colorstr('bold', save_dir)}\n"
-                    f'Usage example: $ python train.py --hyp {evolve_yaml}')
-
 
 
 def ray_main(opt, callbacks=Callbacks()):
@@ -727,13 +589,15 @@ def ray_main(opt, callbacks=Callbacks()):
     opt.data, opt.cfg, opt.hyp, opt.weights, opt.project = \
         check_file(opt.data), check_yaml(opt.cfg), check_yaml(opt.hyp), str(opt.weights), str(opt.project)  # checks
     assert len(opt.cfg) or len(opt.weights), 'either --cfg or --weights must be specified'
-    if opt.evolve:
-        # if opt.project == str(ROOT / 'runs/train'):  # if default project name, rename to runs/evolve
-            # opt.project = str(ROOT / 'runs/evolve')
-        opt.project = opt.project.replace("train", "evolve")
+
+    # ray: 更换save_dir路径，raytune数据和最终训练的结果都放在这里
+    if opt.raytune:
+        if opt.project == str(ROOT / 'runs/train'):  # if default project name, rename to runs/evolve
+            opt.project = str(ROOT / 'runs/evolve_ray')
+        opt.project = opt.project.replace("train", "evolve_ray")
         opt.exist_ok, opt.resume = opt.resume, False  # pass resume to exist_ok and disable resume
-    if opt.name == 'cfg':
-        opt.name = Path(opt.cfg).stem  # use model.yaml as name   # stem返回路径的文件名部分，不包括扩展名； 默认地opt中为exp
+    # if opt.name == 'cfg':
+        # opt.name = Path(opt.cfg).stem  # use model.yaml as name   # stem返回路径的文件名部分，不包括扩展名； 默认地opt中为exp
     opt.save_dir = str(increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok))  # 初始化save_dir到opt
 
     # DDP mode
@@ -748,18 +612,15 @@ def ray_main(opt, callbacks=Callbacks()):
 
     # ===============================================================================================
     # Train
-    if not opt.evolve:
+    if not opt.raytune:
         ray_train(config, default_config, opt, device, callbacks)
 
     # 使用 Ray Tune进行超参数优化
     else:
-        opt.project = opt.project.replace("evolve", "evolve_ray")
-        # 检查路径是否存在，不存在则创建
-        save_dir = Path(opt.project)
-        save_dir.mkdir(parents=True, exist_ok=True)
-        # ray.init(tmp_dir=opt.project.replace("evolve", "evolve_ray"))  # 初始化Ray运行环境，指定临时文件存储路径
-
+        
+        #! Ray Tune 相关参数 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # 定义超参数搜索空间
+        #! 建议 1) 部分参数使用tune.choice离散化取值范围和tune.uniform连续取值范围相结合的方式进行定义；
         default_space = {
             # 'optimizer': tune.choice(['SGD', 'Adam', 'AdamW', 'NAdam', 'RAdam', 'RMSProp']),
             "lr0": tune.uniform(1e-4, 1e-2),
@@ -787,29 +648,44 @@ def ray_main(opt, callbacks=Callbacks()):
             # "copy_paste": tune.uniform(0.0, 1.0),  # segment copy-paste (probability)
         }  
 
-        # 定义搜索算法和调度器
-        algo = OptunaSearch()
-
-
         # 定义ray.tune的控制参数
-        # 定义最大训练代数
+        #! 目前仅支持单GPU的超参数优化
         if not torch.cuda.is_available():
             import sys
             print("No GPU found, exiting...")
             sys.exit(1)
 
+        if check_os() == "Windows":
+            max_generations = 1
+            gpus_per_trial = 1  #! 仅考虑单GPU的情况
+            cpus_per_trial = 8
+            opt.workers = cpus_per_trial
+            opt.device = "0"
+            device = torch.device('cuda:0')
+            trials = 1
+            grace_period = 1
+        else:
+            max_generations = 20
+            gpus_per_trial = 1  #! 仅考虑单GPU的情况
+            cpus_per_trial = 8
+            opt.workers = cpus_per_trial
+            opt.device = "0"
+            device = torch.device('cuda:0')
+            trials = 30
+            grace_period = 2
 
-        max_generations = 10
-        gpus_per_trial = 1  #! 仅考虑单GPU的情况
-        cpus_per_trial = 6
-        opt.workers = cpus_per_trial
-        opt.device = "0"
-        device = torch.device('cuda:0')
-        trials = 30
+        #! Ray Tune 相关参数 ----------------------------------------------------------------------------------------------------------
 
+
+        # 检查路径是否存在，不存在则创建
+        save_dir = Path(opt.save_dir)
+        save_dir.mkdir(parents=True, exist_ok=True)
 
         tune_default_config = deepcopy(default_config)
         tune_opt = deepcopy(opt)
+
+        # 定义搜索算法和调度器
+        algo = OptunaSearch()   # todo: 还有其他搜索算法可供选择
 
         # 创建Tuner并运行超参数优化
         tuner = tune.Tuner(
@@ -822,10 +698,10 @@ def ray_main(opt, callbacks=Callbacks()):
                 mode="max",
                 search_alg=algo,
                 scheduler=ASHAScheduler(
-                    # metric="recall",  # 与train函数中tune.report的metric名称对应；与tuneconfig中的metric只能存在一个
+                    # metric="recall",  #? 与train函数中tune.report的metric名称对应；与tuneconfig中的metric只能存在一个
                     # mode="max",
                     max_t=max_generations,
-                    grace_period=2,
+                    grace_period=grace_period,
                     time_attr="training_iteration",
                     reduction_factor=2),
                 num_samples=trials,
@@ -834,8 +710,8 @@ def ray_main(opt, callbacks=Callbacks()):
             ),
             param_space=default_space,
             run_config=tune.RunConfig(
-                name=Path(opt.project).name,
-                storage_path=Path(opt.project).parent,
+                name=Path(opt.save_dir).name,
+                storage_path=Path(opt.save_dir).parent,
                 stop={"training_iteration": max_generations},
                 verbose=2,
                 log_to_file=True,
@@ -843,32 +719,49 @@ def ray_main(opt, callbacks=Callbacks()):
         )
 
         LOGGER.info(f"opt.project: {opt.project}")
+        LOGGER.info(f"opt.save_dir: {opt.save_dir}")
 
         # 运行超参数优化
+        LOGGER.info("Starting Ray Tune hyperparameter optimization...")
         results = tuner.fit()
 
         # 输出最佳结果
-        print("Best config is:", results.get_best_result().config)
-
+        best_config = results.get_best_result(metric="fitness",mode="max").config
         test_default_config = deepcopy(default_config)
         test_opt = deepcopy(opt)
-        ray_train(results.get_best_result().config, test_default_config,  test_opt, device, callbacks)
+
+        try:
+            result_df = results.get_dataframe(filter_metric="fitness", filter_mode="max")
+            LOGGER.info(f"Best config is: {best_config}")
+
+            # 将config持久化到yaml文件中
+            best_config_yaml_path = Path(opt.save_dir) / 'best_hyp.yaml'
+            with open(best_config_yaml_path, 'w') as f:
+                yaml.dump(best_config, f)
+                LOGGER.info(f"Best config yaml saved to: {best_config_yaml_path}")
+            # 将 result_df 保存到 CSV 文件中
+            result_csv_path = Path(opt.save_dir) / 'ray_tune_results.csv'
+            result_df.to_csv(result_csv_path, index=False)
+            LOGGER.info(f"All trial results saved to: {result_csv_path}")
 
 
+            # 进行最终训练
+            test_opt.save_dir = str(Path(opt.save_dir) / "final_train")
 
-def run(**kwargs):
-    # Usage: import train; train.run(data='coco128.yaml', imgsz=320, weights='yolov5m.pt')
-    opt = parse_opt(True)
-    for k, v in kwargs.items():
-        setattr(opt, k, v)
-    main(opt)
-    return opt
+        except Exception as e:
+            LOGGER.error(f"Error processing Ray Tune results: {e}")
+
+        LOGGER.info("Starting final training with best hyperparameters...")
+        ray_train(best_config, test_default_config,  test_opt, device, callbacks)
 
 
 
 if __name__ == "__main__":
     opt = parse_opt()  
 
+
+    #! usage: 如果使用 ray.tune 进行超参数优化
+    #! 1. 设置 opt.raytune = True；2. update parse_opt() 中的默认参数; 3. update default_space, max_generations, trials等参数
     opt.raytune = True
     LOGGER.info(f"opt.hyp: {opt.hyp}" )
 
@@ -876,7 +769,6 @@ if __name__ == "__main__":
         opt.nosave = True
         ray_main(opt)
     else:
-        # main(opt)
         ray_main(opt)
 
     print()

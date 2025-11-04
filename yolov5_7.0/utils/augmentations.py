@@ -29,19 +29,20 @@ class Albumentations:
             check_version(A.__version__, '1.0.3', hard=True)  # version requirement
 
             T = [
-                A.RandomResizedCrop(height=size, width=size, scale=(0.8, 1.0), ratio=(0.9, 1.11), p=0.0),
-                A.Blur(p=0.01),
-                A.MedianBlur(p=0.01),
-                A.ToGray(p=0.01),
-                A.CLAHE(p=0.01),
-                A.RandomBrightnessContrast(p=0.0),
-                A.RandomGamma(p=0.0),
-                A.ImageCompression(quality_lower=75, p=0.0)]  # transforms
+                A.RandomResizedCrop(height=size, width=size, scale=(0.8, 1.0), ratio=(0.9, 1.11), p=0.0),  # 随机裁剪并缩放到固定大小
+                A.Blur(p=0.01),       # 对图像施加轻微的模糊效果
+                A.MedianBlur(p=0.01), # 中值模糊，对椒盐噪声有很好的抑制效果
+                A.ToGray(p=0.01),     # 将图像转换为灰度图像 （RGB2GRAY + GRAY2RGB, 输出通道数不变）
+                A.CLAHE(p=0.01),      # 对图像应用CLAHE（对比度受限自适应直方图均衡化）
+                A.RandomBrightnessContrast(p=0.0),   # 随机调整图像的亮度和对比度
+                A.RandomGamma(p=0.0),  # 随机调整图像的伽马值
+                A.ImageCompression(quality_lower=75, p=0.0)  # 模拟低质量 JPEG 压缩，增加图像压缩伪影
+                ]  # transforms
             self.transform = A.Compose(T, bbox_params=A.BboxParams(format='yolo', label_fields=['class_labels']))
 
             LOGGER.info(prefix + ', '.join(f'{x}'.replace('always_apply=False, ', '') for x in T if x.p))
-        except ImportError:  # package not installed, skip
-            pass
+        except ImportError as e:  # package not installed, skip
+            LOGGER.info(f'{prefix}{e}')
         except Exception as e:
             LOGGER.info(f'{prefix}{e}')
 

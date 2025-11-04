@@ -1,10 +1,8 @@
 #!/bin/bash
 # ================ remote ====================
-# =============== Single-GPU ================
-# python train.py --epochs 10 --data coco128.yaml --weights yolov5s.pt --cache --evolve
-# python train.py  --batch-size 64 --data coco.yaml --weights yolov5s.pt --device 0
-# python ../../train.py       --device 0 --batch 24 --cache --imgsz 1120 
-# nohup python ../../train_sgdm.py --device 0 --batch 24 --epochs 200 --cache --imgsz 1120 --cos-lr --image-weights --optimizer SGD  > output_train.log 2>&1 &
+# =============== Single-GPU ================ 
+# 1) train configuration + freeze10 + low lr + stay warmup
+# 2) train configuration + low lr + stay warmup
 # nohup python ../../train_little.py --device 0 --batch 24 --epochs 80 --cache --imgsz 1120 --cos-lr  --image-weights  --freeze 10  > output_finetune.log 2>&1 &
 
 # ============== Multi-GPU with delay ================

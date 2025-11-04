@@ -1,18 +1,14 @@
 # YOLOv5 🚀 by Ultralytics, GPL-3.0 license
 """
-Train a YOLOv5 model on a custom dataset.
-Models and datasets download automatically from the latest YOLOv5 release.
+Train a YOLOv5 model on a custom dataset by modifying train.py for flexible usage.
 
 Usage - Single-GPU training:
-    $ python train.py --data coco128.yaml --weights yolov5s.pt --img 640  # from pretrained (recommended)
-    $ python train.py --data coco128.yaml --weights '' --cfg yolov5s.yaml --img 640  # from scratch
+    $ python train_raytune_copy.py --device 0 --batch 24 --imgsz 1120 --epochs 500 --cache --cos-lr  --image-weights 
+    --hyp '.../apple_3_7_hyp_evolve_20251024_1126.yaml' --data '.../apple_3_7_jpg_train.yaml' --cfg '.../yolov5s.yaml' --weights '.../yolov5s.pt'
 
 Usage - Multi-GPU DDP training:
     $ python -m torch.distributed.run --nproc_per_node 4 --master_port 1 train.py --data coco128.yaml --weights yolov5s.pt --img 640 --device 0,1,2,3
 
-Models:     https://github.com/ultralytics/yolov5/tree/master/models
-Datasets:   https://github.com/ultralytics/yolov5/tree/master/data
-Tutorial:   https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data
 """
  
 import argparse
@@ -209,6 +205,9 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
     labels = np.concatenate(dataset.labels, 0)
     mlc = int(labels[:, 0].max())  # max label class
     assert mlc < nc, f'Label class {mlc} exceeds nc={nc} in {data}. Possible class labels are 0-{nc - 1}'  #! 很有意思的一步
+    #! 输出dataset.albumentations.transform
+    if hasattr(dataset.albumentations, 'transform') and dataset.albumentations.transform is not None:
+        LOGGER.info(f"{colorstr('train: ')}albumentations.transform: {dataset.albumentations.transform}")
 
     # Process 0
     if RANK in {-1, 0}:
@@ -457,35 +456,38 @@ def check_os():
 
 
 def parse_opt(known=False):
-    if check_os() == "Windows":
+
+    #! 设置yolo.train 参数 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    if check_os() == "Windows":  # 本机调试环境
         root = r"D:\ProjectsRelated\CoreProjects\yolo_family_with_deploy"
         weights = os.path.join(root, "resources\models\yolov5\yolov5s.pt")
         cfg     = os.path.join(root, "yolov5_7.0\models/apple_3_7/yolov5s.yaml")
-        data    = os.path.join(root, "yolov5_7.0\data/cable/apple_3_7_train.yaml")
+        data    = os.path.join(root, "yolov5_7.0\data/cable/apple_3_7_jpg_train.yaml")
         hyp     = os.path.join(root, "yolov5_7.0\data/hyps/apple_3_7_hyp_evolve.yaml")
-    else:
+        project = os.path.join(root, "yolov5_7.0/runs/train")
+    elif check_lanyun_env():      # 蓝耘环境
         root = r"/root/lanyun-tmp/projects/yolo_family_with_deploy"
-        # /ns_data/projets/yolo_family_with_deploy/resources/models/yolov5/yolov5s.pt
         # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp14/weights/best.pt")
         # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp42/weights/best.pt")
-        weights = os.path.join(root, "resources/models/yolov5/yolov5s.pt")
-        cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5s.yaml")
+        weights = os.path.join(root, r"resources/models/yolov5/yolov5m.pt")
+        cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5m.yaml")
         data    = os.path.join(root, "yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml")
-        # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp.scratch-low.yaml")
-        # hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1126.yaml")
-        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_little.yaml")
+        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1127.yaml")
+        project = os.path.join(root, "yolov5_7.0/runs/train")
+    else:                      # 其他Linux环境，直接退出
+        sys.exit("当前环境非Windows且非蓝云环境，程序退出！请根据实际情况修改train_raytune.py中的默认路径参数。")
+        sys.exit(0)
     
 
     # 创建ArgumentParser对象
     parser = argparse.ArgumentParser()
-    # 最为常用的参数
-    # /home/python_projects/yolo_family_with_deploy/yolov5_7.0/runs/train/exp8/weights/best.pt
+    #? 最为常用的参数: 默认参数，默认全部为本地运行服务(很重要的原则)
     # ROOT / 'runs/train/exp8/weights/best.pt'
-    parser.add_argument('--weights',         type=str, default=weights,          help='initial weights path')
+    parser.add_argument('--weights',         type=str, default=weights,          help='initial weights path')  
     parser.add_argument('--cfg',             type=str, default=cfg ,             help='模型配置文件路径')
     parser.add_argument('--data',            type=str, default=data,             help='dataset.yaml path')
     parser.add_argument('--hyp',             type=str, default=hyp ,             help='训练超参数配置文件路径')
-    parser.add_argument('--epochs',          type=int, default=500,                                     help='total training epochs')  
+    parser.add_argument('--epochs',          type=int, default=5,                                     help='total training epochs')  
     parser.add_argument('--batch-size',      type=int, default=12,                                       help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640,                       help='train, val image size (pixels)')
     parser.add_argument('--optimizer',       type=str, choices=['SGD', 'Adam', 'AdamW'], default='Adam', help='optimizer')
@@ -497,33 +499,34 @@ def parse_opt(known=False):
     
     
     # 训练结果名称控制    
-    parser.add_argument('--project',         default=ROOT / 'runs/train',                               help='save to project/name')  # 设置每次训练结果保存的主路径名称
-    parser.add_argument('--name',            default='exp',                                             help='save to project/name')  # 子路径名称
-    parser.add_argument('--exist-ok',        action='store_true',                                       help='existing project/name ok, do not increment') # 是否覆盖同名的训练结果保存路径，默认关闭，表示不覆盖
+    parser.add_argument('--project',         default=project,                          help='save to project/name')  # 设置每次训练结果保存的主路径名称
+    parser.add_argument('--name',            default='exp',                            help='save to project/name')  # 子路径名称
+    parser.add_argument('--exist-ok',        action='store_true',                      help='existing project/name ok, do not increment') # 是否覆盖同名的训练结果保存路径，默认关闭，表示不覆盖
 
     
     # trick参数
-    parser.add_argument('--rect',            action='store_true',                                       help='[trick] rectangular training')   # 矩形训练，默认关闭 
-    parser.add_argument('--noautoanchor',    action='store_true',                                       help='[trick] disable AutoAnchor')    #? 关闭自动计算锚框功能，默认关闭，即会自动计算
-    parser.add_argument('--evolve',          type=int, nargs='?', const=300,                            help='[trick] evolve hyperparameters for x generations')  # ? 使用超参数优化算法进行自动调参
-    parser.add_argument('--cache',           type=str, nargs='?', const='ram',                          help='[trick] image --cache ram/disk')        # 缓存数据集，默认关闭
-    parser.add_argument('--image-weights',   action='store_true',                                       help='[trick] use weighted image selection for training')  #? 对数据集图片进行加权训练
-    parser.add_argument('--multi-scale',     action='store_true',                                       help='[trick] vary img-size +/- 50%%')    # 多尺度训练，训练过程中每次输入图片会放大或缩小50%。
-    parser.add_argument('--label-smoothing', type=float, default=0.1,                                   help='[trick] Label smoothing epsilon') # 表示在每个标签的真实概率上添加一个 epsilon=0.1的噪声，从而使模型对标签的波动更加鲁棒；
+    parser.add_argument('--rect',            action='store_true',                      help='[trick] rectangular training')   # 矩形训练，默认关闭 
+    parser.add_argument('--noautoanchor',    action='store_true',                      help='[trick] disable AutoAnchor')    #? 常用: 关闭自动计算锚框功能，默认关闭，即会自动计算
+    parser.add_argument('--evolve',          type=int, nargs='?', const=300,           help='[trick] (depreciated) evolve hyperparameters for x generations')  # ? 使用超参数优化算法进行自动调参（在当前文件中不起作用）
+    parser.add_argument('--raytune',         action='store_true',                      help='[trick] evolve hyperparameters for x generations by raytune')  # ? 常用: 使用超参数优化算法进行自动调参
+    parser.add_argument('--cache',           type=str, nargs='?', const='ram',         help='[trick] image --cache ram/disk')        #? 常用: 缓存数据集，默认关闭
+    parser.add_argument('--image-weights',   action='store_true',                      help='[trick] use weighted image selection for training')  #? 常用: 对数据集图片进行加权训练
+    parser.add_argument('--multi-scale',     action='store_true',                      help='[trick] vary img-size +/- 50%%')    # 多尺度训练，训练过程中每次输入图片会放大或缩小50%。
+    parser.add_argument('--label-smoothing', type=float, default=0.1,                  help='[trick] Label smoothing epsilon')   # 表示在每个标签的真实概率上添加一个 epsilon=0.1的噪声，从而使模型对标签的波动更加鲁棒；
     
     
     # DDP和多GPU等相关
-    parser.add_argument('--device',          default="0",                                                help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-    parser.add_argument('--resume',          nargs='?', const=True, default=False,                      help='resume most recent training')    # 断点续训
-    parser.add_argument('--nosave',          action='store_true',                                       help='only save final checkpoint')
-    parser.add_argument('--noval',           action='store_true',                                       help='only validate final epoch')
-    parser.add_argument('--noplots',         action='store_true',                                       help='save no plot files')
-    parser.add_argument('--bucket',          type=str, default='',                                      help='gsutil bucket')
-    parser.add_argument('--single-cls',      action='store_true',                                       help='train multi-class data as single-class')
-    parser.add_argument('--sync-bn',         action='store_true',                                       help='use SyncBatchNorm, only available in DDP mode')
-    parser.add_argument('--workers',         type=int, default=6,                                       help='max dataloader workers (per RANK in DDP mode)')
-    parser.add_argument('--local_rank',      type=int, default=-1,                                      help='Automatic DDP Multi-GPU argument, do not modify')
-    parser.add_argument('--quad',            action='store_true',                                       help='quad dataloader')
+    parser.add_argument('--device',          default="0",                              help='cuda device, i.e. 0 or 0,1,2,3 or cpu')  #? 常用: 单GPU训练时指定GPU编号，多GPU训练时指定多个GPU编号，CPU训练时指定cpu
+    parser.add_argument('--resume',          nargs='?', const=True, default=False,     help='resume most recent training')    # 断点续训
+    parser.add_argument('--nosave',          action='store_true',                      help='only save final checkpoint')
+    parser.add_argument('--noval',           action='store_true',                      help='only validate final epoch')
+    parser.add_argument('--noplots',         action='store_true',                      help='save no plot files')
+    parser.add_argument('--bucket',          type=str, default='',                     help='gsutil bucket')
+    parser.add_argument('--single-cls',      action='store_true',                      help='train multi-class data as single-class')
+    parser.add_argument('--sync-bn',         action='store_true',                      help='use SyncBatchNorm, only available in DDP mode')
+    parser.add_argument('--workers',         type=int, default=8,                      help='max dataloader workers (per RANK in DDP mode)')
+    parser.add_argument('--local_rank',      type=int, default=-1,                     help='Automatic DDP Multi-GPU argument, do not modify')
+    parser.add_argument('--quad',            action='store_true',                      help='quad dataloader')
 
 
     # Logger arguments
@@ -531,6 +534,7 @@ def parse_opt(known=False):
     parser.add_argument('--upload_dataset', nargs='?', const=True, default=False, help='Upload data, "val" option')
     parser.add_argument('--bbox_interval',  type=int, default=-1,                 help='Set bounding-box image logging interval') # 每隔多少个epoch记录一次带有边界框的图片
     parser.add_argument('--artifact_alias', type=str, default='latest',           help='Version of dataset artifact to use')
+    #! 设置yolo.train 参数 ----------------------------------------------------------------------------------------------------------
 
     # 解析命令行传入的参数：parser.parse_args()
     return parser.parse_known_args()[0] if known else parser.parse_args()

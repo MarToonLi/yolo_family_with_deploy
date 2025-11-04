@@ -1,88 +1,23 @@
 
 # Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..] 
-path: D:/Datasets/3-7_jpg_v2  # dataset root dir   # 本地路径
+path: E:/Resources/datasets/Apple/3-7-v2  # dataset root dir   # 本地路径
 # path: /local_data/datasets/3-7 TH -v1  # dataset root dir
 train:  # train images (relative to 'path') 128 images
-  - images/0807  
-  - images/0817  
-  - images/0819
-  - images/0820  
+  - images/train
+  - images/0826
   - images/0824
-  - images/0826  
-  - images/0829  
-  - images/0830  
-  - images/0904  
-  - images/0905  
-  - images/0906  
-  - images/0907  
-  - images/0909  
-  - images/0910  
-  - images/0917  
-  - images/0920  
-  - images/0921  
-  - images/0923    
-  - images/0923_2    
-  - images/0924  
-  - images/0925
-  - images/0926  
-  - images/1007  
-  - images/1008  
-  - images/1009  
-  - images/1010  
-  - images/1016  
-  - images/1018  
-  - images/1021  
-  - images/1112  
-  - images/1126  
-  - images/1127  
-  - images/1204  
-  - images/1207  
-  - images/1214  
-  - images/1224  
-  - images/200ARR  
-  - images/train_jpg
-  - images/unfound_images
-
+  - images/0820
+  - images/0819
+  - images/0817
+  - images/200ARR
 val: # val images (relative to 'path') 128 images
-  - labels/0807  
-  - labels/0817  
-  - labels/0819
-  - labels/0820  
-  - labels/0824
-  - labels/0826  
-  - labels/0829  
-  - labels/0830  
-  - labels/0904  
-  - labels/0905  
-  - labels/0906  
-  - labels/0907  
-  - labels/0909  
-  - labels/0910  
-  - labels/0917  
-  - labels/0920  
-  - labels/0921  
-  - labels/0923    
-  - labels/0923_2    
-  - labels/0924  
-  - labels/0925
-  - labels/0926  
-  - labels/1007  
-  - labels/1008  
-  - labels/1009  
-  - labels/1010  
-  - labels/1016  
-  - labels/1018  
-  - labels/1021  
-  - labels/1112  
-  - labels/1126  
-  - labels/1127  
-  - labels/1204  
-  - labels/1207  
-  - labels/1214  
-  - labels/1224  
-  - labels/200ARR  
-  - labels/train_jpg
-  - labels/unfound_images
+  - images/train
+  - images/0826
+  - images/0824
+  - images/0820
+  - images/0819
+  - images/0817
+  - images/200ARR
 test:  # test images (optional)
 
 # Classes
