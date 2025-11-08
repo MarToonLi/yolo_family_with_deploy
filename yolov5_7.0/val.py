@@ -61,6 +61,7 @@ def save_one_txt(predn, save_conf, shape, file):
 def save_one_json(predn, jdict, path, class_map):
     # Save one JSON result {"image_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}
     image_id = int(path.stem) if path.stem.isnumeric() else path.stem
+
     box = xyxy2xywh(predn[:, :4])  # xywh
     box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
     for p, b in zip(predn.tolist(), box.tolist()):
@@ -69,6 +70,60 @@ def save_one_json(predn, jdict, path, class_map):
             'category_id': class_map[int(p[5])],
             'bbox': [round(x, 3) for x in b],
             'score': round(p[4], 5)})
+
+def save_one_json_noncoco(predn, jdict, path, class_map):
+    # Save one JSON result {"image_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}
+    # image_id = int(path.stem) if path.stem.isnumeric() else path.stem
+
+    # todo: 增加父文件夹的名称
+    image_id = path.parent.name + "." + path.stem
+
+
+    box = xyxy2xywh(predn[:, :4])  # xywh
+    box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
+    for p, b in zip(predn.tolist(), box.tolist()):
+        jdict.append({
+            'image_id': image_id,
+            'category_id': class_map[int(p[5])],
+            'bbox': [round(x, 3) for x in b],
+            'score': round(p[4], 5)})
+
+
+def print_iou50_size_metrics(stats: np.ndarray) -> None:
+    """
+    单独打印 IoU=0.5 阈值下大、中、小目标的 AP 和 AR 指标
+    COCOeval.stats 数组索引对应关系（关键）：
+    - 1: AP@0.5（整体）
+    - 3: AP@0.5（小目标，面积 < 32²）
+    - 4: AP@0.5（中目标，32² ≤ 面积 < 96²）
+    - 5: AP@0.5（大目标，面积 ≥ 96²）
+    - 7: AR@0.5（整体）
+    - 9: AR@0.5（小目标）
+    - 10: AR@0.5（中目标）
+    - 11: AR@0.5（大目标）
+    """
+    # 定义尺寸分类的中文说明
+    size_desc = {
+        "small": "小目标（面积 < 32×32）",
+        "medium": "中目标（32×32 ≤ 面积 < 96×96）",
+        "large": "大目标（面积 ≥ 96×96）"
+    }
+ 
+    print("\n" + "=" * 60)
+    print("📊 IoU=0.5 阈值下         大/中/小目标        专项评估结果")
+    print("=" * 60)
+    print(f"{'目标尺寸':<20}      {'AP@0.5':<10}      {'AR@0.5':<10}")
+    print("-" * 60)
+    # 小目标
+    print(f"{size_desc['small']:<20}      {stats[3]:<10.4f}      {stats[9]:<10.4f}")
+    # 中目标
+    print(f"{size_desc['medium']:<20}      {stats[4]:<10.4f}      {stats[10]:<10.4f}")
+    # 大目标
+    print(f"{size_desc['large']:<20}      {stats[5]:<10.4f}      {stats[11]:<10.4f}")
+    # 整体对比
+    print("-" * 60)
+    print(f"{'整体目标':<20}      {stats[1]:<10.4f}      {stats[7]:<10.4f}")
+
 
 
 def process_batch(detections, labels, iouv):
@@ -274,7 +329,8 @@ def run(
             if save_txt:
                 save_one_txt(predn, save_conf, shape, file=save_dir / 'labels' / f'{path.stem}.txt')
             if save_json:
-                save_one_json(predn, jdict, path, class_map)  # append to COCO-JSON dictionary
+                # save_one_json(predn, jdict, path, class_map)  # append to COCO-JSON dictionary
+                save_one_json_noncoco(predn, jdict, path, class_map)  # append to COCO-JSON dictionary
             callbacks.run('on_val_image_end', pred, predn, path, names, im[si])
 
         # Plot images
@@ -322,7 +378,8 @@ def run(
     # Save JSON
     if save_json and len(jdict):
         w = Path(weights[0] if isinstance(weights, list) else weights).stem if weights is not None else ''  # weights
-        anno_json = str(Path(data.get('path', '../coco')) / 'annotations/instances_val2017.json')  # annotations json
+        # anno_json = str(Path(data.get('path', '../coco')) / 'annotations/instances_val2017.json')  # annotations json
+        anno_json = str(Path(data.get('path', '../coco')) / 'annotations.json')  # annotations json
         pred_json = str(save_dir / f"{w}_predictions.json")  # predictions json
         LOGGER.info(f'\nEvaluating pycocotools mAP... saving {pred_json}...')
         with open(pred_json, 'w') as f:
@@ -341,6 +398,7 @@ def run(
             eval.evaluate()
             eval.accumulate()
             eval.summarize()
+            print_iou50_size_metrics(eval.stats)
             map, map50 = eval.stats[:2]  # update results (mAP@0.5:0.95, mAP@0.5)
         except Exception as e:
             LOGGER.info(f'pycocotools unable to run: {e}')
@@ -406,7 +464,7 @@ def parse_opt():
     # 最为常用的参数
     parser.add_argument('--data',        type=str, default=data, help='dataset.yaml path')
     parser.add_argument('--weights',     nargs='+', type=str, default=weights, help='model path(s)')
-    parser.add_argument('--batch-size',  type=int, default=32, help='batch size')
+    parser.add_argument('--batch-size',  type=int, default=16, help='batch size')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=1120, help='inference size (pixels)')
     parser.add_argument('--device',      default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--workers',     type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
@@ -433,7 +491,8 @@ def parse_opt():
 
     opt = parser.parse_args()
     opt.data = check_yaml(opt.data)                 # check YAML
-    opt.save_json |= opt.data.endswith('coco.yaml') # 位或赋值运算符，有一个为True，则save_json为True
+    opt.save_json = True
+    # opt.save_json |= opt.data.endswith('coco.yaml') # 位或赋值运算符，有一个为True，则save_json为True
     opt.save_txt |= opt.save_hybrid
     print_args(vars(opt))
     return opt
