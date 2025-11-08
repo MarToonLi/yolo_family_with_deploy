@@ -507,10 +507,10 @@ def parse_opt(known=False):
         root = r"/root/lanyun-tmp/projects/yolo_family_with_deploy"
         # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp14/weights/best.pt")
         # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp42/weights/best.pt")
-        weights = os.path.join(root, r"resources/models/yolov5/yolov5m.pt")
-        cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5m.yaml")
+        weights = os.path.join(root, r"resources/models/yolov5/yolov5s.pt")
+        cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5s_P2.yaml")
         data    = os.path.join(root, "yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml")
-        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1127.yaml")
+        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251108_4090.yaml")
         project = os.path.join(root, "yolov5_7.0/runs/train")
     else:                      # 其他Linux环境，直接退出
         sys.exit("当前环境非Windows且非蓝云环境，程序退出！请根据实际情况修改train_raytune.py中的默认路径参数。")

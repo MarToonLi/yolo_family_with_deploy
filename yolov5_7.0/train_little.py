@@ -465,7 +465,7 @@ def parse_opt(known=False):
     if check_os() == "Windows":  # 本机调试环境
         root = r"D:\ProjectsRelated\CoreProjects\yolo_family_with_deploy"
         weights = os.path.join(root, "resources\models\yolov5\yolov5s.pt")
-        cfg     = os.path.join(root, "yolov5_7.0\models/apple_3_7/yolov5s.yaml")
+        cfg     = os.path.join(root, "yolov5_7.0\models/apple_3_7/yolov5s_P2.yaml")
         data    = os.path.join(root, "yolov5_7.0\data/cable/apple_3_7_jpg_train.yaml")
         hyp     = os.path.join(root, "yolov5_7.0\data/hyps/apple_3_7_hyp_evolve.yaml")
         project = os.path.join(root, "yolov5_7.0/runs/train")
@@ -473,8 +473,8 @@ def parse_opt(known=False):
         root = r"/root/lanyun-tmp/projects/yolo_family_with_deploy"
         # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp14/weights/best.pt")
         # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp42/weights/best.pt")
-        weights = os.path.join(root, r"resources/models/yolov5/yolov5m.pt")
-        cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5m.yaml")
+        weights = os.path.join(root, r"resources/models/yolov5/yolov5s.pt")
+        cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5s_P2.yaml")
         data    = os.path.join(root, "yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml")
         hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1127.yaml")
         project = os.path.join(root, "yolov5_7.0/runs/train")
@@ -492,7 +492,7 @@ def parse_opt(known=False):
     parser.add_argument('--data',            type=str, default=data,             help='dataset.yaml path')
     parser.add_argument('--hyp',             type=str, default=hyp ,             help='训练超参数配置文件路径')
     parser.add_argument('--epochs',          type=int, default=5,                                     help='total training epochs')  
-    parser.add_argument('--batch-size',      type=int, default=12,                                       help='total batch size for all GPUs, -1 for autobatch')
+    parser.add_argument('--batch-size',      type=int, default=4,                                       help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640,                       help='train, val image size (pixels)')
     parser.add_argument('--optimizer',       type=str, choices=['SGD', 'Adam', 'AdamW'], default='Adam', help='optimizer')
     parser.add_argument('--cos-lr',          action='store_true',                                       help='cosine LR scheduler')
