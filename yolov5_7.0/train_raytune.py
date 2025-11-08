@@ -743,6 +743,7 @@ def ray_main(opt, callbacks=Callbacks()):
             result_csv_path = Path(opt.save_dir) / 'ray_tune_results.csv'
             result_df.to_csv(result_csv_path, index=False)
             LOGGER.info(f"All trial results saved to: {result_csv_path}")
+            ray.shutdown()   #
 
 
             # 进行最终训练
@@ -750,6 +751,25 @@ def ray_main(opt, callbacks=Callbacks()):
 
         except Exception as e:
             LOGGER.error(f"Error processing Ray Tune results: {e}")
+
+
+        total_mem = torch.cuda.get_device_properties(0).total_memory        # 总显存（字节）
+        allocated_mem = torch.cuda.memory_allocated()                       # 已分配显存（字节）
+        used_ratio = allocated_mem / total_mem                              # 已用比例
+
+        print(f"[DEBUG] 显存使用: {allocated_mem / 1024**2:.2f} MB / {total_mem / 1024**2:.2f} MB "
+            f"(占比: {used_ratio * 100:.1f}%)")
+        
+        if used_ratio > 0.5:
+            torch.cuda.empty_cache()
+            import time
+            time.sleep(60)
+            torch.cuda.empty_cache()
+            ray.shutdown()   # 防止仍然占用较大的显存，影响后续训练！ #todo: 待验证
+        else:
+            ray.shutdown()   # 防止仍然占用较大的显存，影响后续训练！ #todo: 待验证
+
+
 
         LOGGER.info("Starting final training with best hyperparameters...")
         ray_train(best_config, test_default_config,  test_opt, device, callbacks)

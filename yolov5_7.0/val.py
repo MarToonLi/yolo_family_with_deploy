@@ -80,20 +80,23 @@ def process_batch(detections, labels, iouv):
     Returns:
         correct (array[N, 10]), for 10 IoU levels
     """
-    correct = np.zeros((detections.shape[0], iouv.shape[0])).astype(bool)
-    iou = box_iou(labels[:, 1:], detections[:, :4])
-    correct_class = labels[:, 0:1] == detections[:, 5]
-    for i in range(len(iouv)):
+    correct = np.zeros((detections.shape[0], iouv.shape[0])).astype(bool)  # 创建一个权威false的二维矩阵
+    iou = box_iou(labels[:, 1:], detections[:, :4])     # 计算两组框之间的IOU
+    correct_class = labels[:, 0:1] == detections[:, 5]  # 判断预测框和真实框的类别是否一致
+    for i in range(len(iouv)): 
         x = torch.where((iou >= iouv[i]) & correct_class)  # IoU > threshold and classes match
         if x[0].shape[0]:
+            # 构建拼接后得到一个数组：[i_idx, j_idx, iou_val]，即 ​真实框编号、预测框编号、它们的 IoU
             matches = torch.cat((torch.stack(x, 1), iou[x[0], x[1]][:, None]), 1).cpu().numpy()  # [label, detect, iou]
             if x[0].shape[0] > 1:
-                matches = matches[matches[:, 2].argsort()[::-1]]
-                matches = matches[np.unique(matches[:, 1], return_index=True)[1]]
+                matches = matches[matches[:, 2].argsort()[::-1]]  # 按照IOU从高到低排序匹配对
+                matches = matches[np.unique(matches[:, 1], return_index=True)[1]]  # 对于每个预测框，只保留IOU最高的那个（去重）
                 # matches = matches[matches[:, 2].argsort()[::-1]]
-                matches = matches[np.unique(matches[:, 0], return_index=True)[1]]
-            correct[matches[:, 1].astype(int), i] = True
+                matches = matches[np.unique(matches[:, 0], return_index=True)[1]]  # 对于每个真实框，只保留IOU最高的那个（去重）
+            correct[matches[:, 1].astype(int), i] = True  # 表示第i个IOU阈值下，第matches[:, 1]个预测框匹配成功
+
     return torch.tensor(correct, dtype=torch.bool, device=iouv.device)
+    # 返回一个布尔矩阵，表示每个预测框在每个IOU阈值下是否匹配成功  TP
 
 
 @smart_inference_mode()
@@ -192,7 +195,7 @@ def run(
                                        prefix=colorstr(f'{task}: '))[0]
 
     seen = 0
-    confusion_matrix = ConfusionMatrix(nc=nc)
+    confusion_matrix = ConfusionMatrix(nc=nc)  #? 该实例的conf是0.25，iou_thres是0.45
     names = model.names if hasattr(model, 'names') else model.module.names  # get class names
     if isinstance(names, (list, tuple)):  # old format
         names = dict(enumerate(names))
@@ -204,9 +207,10 @@ def run(
     jdict, stats, ap, ap_class = [], [], [], []
     callbacks.run('on_val_start')
     pbar = tqdm(dataloader, desc=s, bar_format=TQDM_BAR_FORMAT)  # progress bar
-    for batch_i, (im, targets, paths, shapes) in enumerate(pbar):
+
+    for batch_i, (im, targets, paths, shapes) in enumerate(pbar): # 当前批次的图像数据、目标标签数据、文件路径和原始形状信息
         callbacks.run('on_val_batch_start')
-        with dt[0]:
+        with dt[0]:  #? dt[0] 记录数据预处理时间(half + normalize)！
             if cuda:
                 im = im.to(device, non_blocking=True)
                 targets = targets.to(device)
@@ -215,12 +219,12 @@ def run(
             nb, _, height, width = im.shape                       # batch size, channels, height, width
 
         # Inference
-        with dt[1]:
+        with dt[1]:  #? dt[1] 记录模型推理时间！
             preds, train_out = model(im) if compute_loss else (model(im, augment=augment), None)
 
         # Loss
         if compute_loss:
-            loss += compute_loss(train_out, targets)[1]  # box, obj, cls
+            loss += compute_loss(train_out, targets)[1]  # box, obj, cls  #? loss 统计的是所有batch的损失！
 
         # NMS
         targets[:, 2:] *= torch.tensor((width, height, width, height), device=device)     # to pixels
@@ -235,25 +239,26 @@ def run(
                                         max_det=max_det)
 
         # Metrics
-        for si, pred in enumerate(preds):
-            labels = targets[targets[:, 0] == si, 1:]
+        for si, pred in enumerate(preds):  #? 遍历当前批次的每个图像的预测结果
+            labels = targets[targets[:, 0] == si, 1:]  #? 提取当前图像预测结果
             nl, npr = labels.shape[0], pred.shape[0]  # number of labels, predictions
-            path, shape = Path(paths[si]), shapes[si][0]
-            correct = torch.zeros(npr, niou, dtype=torch.bool, device=device)  # init
-            seen += 1
+            path, shape = Path(paths[si]), shapes[si][0]  
+            correct = torch.zeros(npr, niou, dtype=torch.bool, device=device)  # init  #? 记录每个预测框在每个iou阈值下是否正确
+            seen += 1  #? 记录当前批次的已经处理的图像数量
 
-            if npr == 0:
-                if nl:
+            if npr == 0: #? 如果当前图像没有预测框
+                if nl:   #? 如果有真实标签，记录统计信息并更新混淆矩阵  （无预测框，所有iou阈值下都是False）
                     stats.append((correct, *torch.zeros((2, 0), device=device), labels[:, 0]))
                     if plots:
                         confusion_matrix.process_batch(detections=None, labels=labels[:, 0])
+                #! 无预测框，无真实标签，直接跳过，不更新混淆矩阵！  # todo: 数据集中没有缺陷的图像样本并不会被纳入混淆矩阵的计算？ 
                 continue
 
             # Predictions
             if single_cls:
                 pred[:, 5] = 0
             predn = pred.clone()
-            scale_boxes(im[si].shape[1:], predn[:, :4], shape, shapes[si][1])  # native-space pred
+            scale_boxes(im[si].shape[1:], predn[:, :4], shape, shapes[si][1])  # native-space pred  #? 预测框坐标转换到原始图像尺寸
 
             # Evaluate
             if nl:
@@ -262,7 +267,7 @@ def run(
                 labelsn = torch.cat((labels[:, 0:1], tbox), 1)                 # native-space labels
                 correct = process_batch(predn, labelsn, iouv)
                 if plots:
-                    confusion_matrix.process_batch(predn, labelsn)
+                    confusion_matrix.process_batch(predn, labelsn)  
             stats.append((correct, pred[:, 4], pred[:, 5], labels[:, 0]))      # (correct, conf, pcls, tcls)
 
             # Save/log
@@ -306,8 +311,13 @@ def run(
 
     # Plots
     if plots:
-        confusion_matrix.plot(save_dir=save_dir, names=list(names.values()))
+        confusion_matrix.plot(normalize=False, save_dir=save_dir, names=list(names.values()))
         callbacks.run('on_val_end', nt, tp, fp, p, r, f1, ap, ap50, ap_class, confusion_matrix)
+        # 输出confusion_matrix未normalized的原始值以及conf和nms的阈值
+        LOGGER.info(f'{colorstr("Tong-Confusion Matrix: ")}: {confusion_matrix.print()};')
+        LOGGER.info(f'{colorstr("Tong-conf_thres & nms_thres: ")} conf_thres={conf_thres}, iou_thres={iou_thres}')
+        # 输出各类别的真实框数目
+        LOGGER.info(f'{colorstr("Tong-numbers of true boxes per class: ")}: {nt};')
 
     # Save JSON
     if save_json and len(jdict):
@@ -346,14 +356,59 @@ def run(
     return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
 
 
+
+def check_os():
+    import platform
+    
+    system = platform.system()
+    if system == "Windows":
+        return "Windows"
+    # elif system == "Linux":
+    #     # 进一步检查是否是 Ubuntu
+    #     distro = platform.linux_distribution()
+    #     if "Ubuntu" in distro:
+    #         return "Ubuntu"
+    #     else:
+    #         return "Linux (非 Ubuntu)"
+    else:
+        return "其他操作系统"
+
+def check_lanyun_env():
+    # 检查 /root/lanyun-tmp/ 路径是否存在，以判断是否在蓝云环境中运行
+    lanyun_path = "/root/lanyun-tmp/"
+    return os.path.exists(lanyun_path)
+
+
 def parse_opt():
+
+    if check_os() == "Windows":  # 本机调试环境
+        root = r"D:\ProjectsRelated\CoreProjects\yolo_family_with_deploy"
+        weights = os.path.join(root, r"yolov5_7.0\runs\4090_train\train\exp\weights\best.pt")
+        cfg     = os.path.join(root, "yolov5_7.0\models/apple_3_7/yolov5s.yaml")
+        data    = os.path.join(root, "yolov5_7.0\data/cable/apple_3_7_jpg_train.yaml")
+        hyp     = os.path.join(root, "yolov5_7.0\data/hyps/apple_3_7_hyp_evolve.yaml")
+        project = os.path.join(root, "yolov5_7.0/runs/val")
+    elif check_lanyun_env():      # 蓝耘环境
+        root = r"/root/lanyun-tmp/projects/yolo_family_with_deploy"
+        # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp14/weights/best.pt")
+        # weights = os.path.join(root, r"yolov5_7.0/runs/train/exp42/weights/best.pt")
+        weights = os.path.join(root, r"yolov5_7.0\runs\4090_train\train\exp\weights\best.pt")
+        cfg     = os.path.join(root, "yolov5_7.0/models/apple_3_7/yolov5m.yaml")
+        data    = os.path.join(root, "yolov5_7.0/data/cable/apple_3_7_jpg_train_remote.yaml")
+        hyp     = os.path.join(root, "yolov5_7.0/data/hyps/apple_3_7_hyp_evolve_20251024_1127.yaml")
+        project = os.path.join(root, "yolov5_7.0/runs/val")
+    else:                      # 其他Linux环境，直接退出
+        sys.exit("当前环境非Windows且非蓝云环境，程序退出！请根据实际情况修改train_raytune.py中的默认路径参数。")
+        sys.exit(0)
+
+
     parser = argparse.ArgumentParser()
     # 最为常用的参数
-    parser.add_argument('--data',        type=str, default=ROOT / 'data/Apple_3_7.yaml', help='dataset.yaml path')
-    parser.add_argument('--weights',     nargs='+', type=str, default=ROOT / 'runs/train/exp18/weights/best.pt', help='model path(s)')
-    parser.add_argument('--batch-size',  type=int, default=-1, help='batch size')
-    parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=1280, help='inference size (pixels)')
-    parser.add_argument('--device',      default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--data',        type=str, default=data, help='dataset.yaml path')
+    parser.add_argument('--weights',     nargs='+', type=str, default=weights, help='model path(s)')
+    parser.add_argument('--batch-size',  type=int, default=32, help='batch size')
+    parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=1120, help='inference size (pixels)')
+    parser.add_argument('--device',      default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--workers',     type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
     parser.add_argument('--verbose',     action='store_true', help='report mAP by class')
     parser.add_argument('--save-txt',    action='store_true', help='save results to *.txt')
@@ -372,7 +427,7 @@ def parse_opt():
     parser.add_argument('--augment',     action='store_true', help='augmented inference')                                    # TODO what meaning?
     parser.add_argument('--save-hybrid', action='store_true', help='save label+prediction hybrid results to *.txt')
     parser.add_argument('--save-json',   action='store_true', help='save a COCO-JSON results file')
-    parser.add_argument('--project',     default=ROOT / 'runs/val', help='save to project/name')
+    parser.add_argument('--project',     default=project, help='save to project/name')
     parser.add_argument('--name',        default='exp', help='save to project/name')
     parser.add_argument('--exist-ok',    action='store_true', help='existing project/name ok, do not increment')
 

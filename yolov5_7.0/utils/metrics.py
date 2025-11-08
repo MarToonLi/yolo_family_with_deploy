@@ -43,8 +43,8 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names
     """
 
     # Sort by objectness
-    i = np.argsort(-conf)
-    tp, conf, pred_cls = tp[i], conf[i], pred_cls[i]
+    i = np.argsort(-conf)  #? 按照confidence对预测框从大到小排序
+    tp, conf, pred_cls = tp[i], conf[i], pred_cls[i]  #? 按照confidence对tp, conf, pred_cls排序
     
     # tp.shape: 223907, 10; 其中的是10是指IOU阈值从0.5到0.95一共10个值
     # conf.shape: 223907,;
@@ -52,48 +52,52 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names
     # target_cls.shape: 3685,;
 
     # Find unique classes
-    unique_classes, nt = np.unique(target_cls, return_counts=True)           # nt: 各类别的实例数目; nc 类别数目
+    unique_classes, nt = np.unique(target_cls, return_counts=True)   # nt: 各类别的真实目标数目; nc 类别数目
     nc = unique_classes.shape[0]  # number of classes, number of detections
+    #? eg: target_cls: [436] 元素为标签； nt: [5] 元素为各类别的真实目标数目； nc: 类别数目
 
     # Create Precision-Recall curve and compute AP for each class
-    px, py = np.linspace(0, 1, 1000), []  # for plotting
-    ap, p, r = np.zeros((nc, tp.shape[1])), np.zeros((nc, 1000)), np.zeros((nc, 1000))
-    for ci, c in enumerate(unique_classes):
-        i = pred_cls == c                              # 获取对应类别的预测数目
-        n_l = nt[ci]   # number of labels
-        n_p = i.sum()  # number of predictions
+    px, py = np.linspace(0, 1, 1000), []  # for plotting; 用于插值的固定召回率点
+    ap, p, r = np.zeros((nc, tp.shape[1])), np.zeros((nc, 1000)), np.zeros((nc, 1000))  
+    #? ap: 每个类别、每个 IoU 阈值下的 AP，形状为 [nc, 10]（10 个 iou 阈值）  [5, 10] 元素为每个类别在每个IOU阈值下的AP值
+    #? p, r: 每个类别在 1000 个召回率点上的 precision 和 recall，用于绘图 横坐标是conf值
+
+    for ci, c in enumerate(unique_classes):  #? 遍历每个类别
+        i = pred_cls == c   # 获取对应类别的预测数目
+        n_l = nt[ci]        # 真实框中当前类别的真实框数目  number of labels
+        n_p = i.sum()       # 预测框中当前类别的预测框数目number of predictions
         if n_p == 0 or n_l == 0:
             continue
 
-        # Accumulate FPs and TPs: 为了
-        fpc = (1 - tp[i]).cumsum(0) 
-        tpc = tp[i].cumsum(0)
+        # Accumulate FPs and TPs: 累积false positive， true positive
+        fpc = (1 - tp[i]).cumsum(0)  # [N2, 10] 注意这里的consum是逐项累加得到N个值而不是一个值，每个值对应一个confidence！
+        tpc = tp[i].cumsum(0)        # [N2, 10]
 
         # Recall
-        recall = tpc / (n_l + eps)  # recall curve
-        r[ci] = np.interp(-px, -conf[i], recall[:, 0], left=0)  # negative x, xp because xp decreases
+        recall = tpc / (n_l + eps)  # recall curve  #? [N2, 10]
+        r[ci] = np.interp(-px, -conf[i], recall[:, 0], left=0)  # negative x, xp because xp decreases  [N2]@IOU=0.5
 
         # Precision
         precision = tpc / (tpc + fpc)  # precision curve
         p[ci] = np.interp(-px, -conf[i], precision[:, 0], left=1)  # p at pr_score
-        
         #? 上述计算中的recall和precison的tensor对象shape为N,10; 上述运算是计算0.5IOU下的N组P和R值；而下述运算是计算10个IOU下的AP；
+        #? r: [N2] p: [N2]
 
         # AP from recall-precision curve: 针对每个类别的每个IOU阈值计算出一个子AP
         for j in range(tp.shape[1]):
             ap[ci, j], mpre, mrec = compute_ap(recall[:, j], precision[:, j])
-            if plot and j == 0:
+            if plot and j == 0:  #? 只绘制0.5IOU下的PR曲线
                 py.append(np.interp(px, mrec, mpre))  # precision at mAP@0.5
 
     # Compute F1 (harmonic mean of precision and recall)
-    f1 = 2 * p * r / (p + r + eps)
+    f1 = 2 * p * r / (p + r + eps)  #? @0.5/cls
     names = [v for k, v in names.items() if k in unique_classes]  # list: only classes that have data
     names = dict(enumerate(names))  # to dict
     if plot:
-        plot_pr_curve(px, py, ap, Path(save_dir) / f'{prefix}PR_curve.png', names)
-        plot_mc_curve(px, f1, Path(save_dir) / f'{prefix}F1_curve.png', names, ylabel='F1')
-        plot_mc_curve(px, p, Path(save_dir) / f'{prefix}P_curve.png', names, ylabel='Precision')
-        plot_mc_curve(px, r, Path(save_dir) / f'{prefix}R_curve.png', names, ylabel='Recall')
+        plot_pr_curve(px, py, ap, Path(save_dir) / f'{prefix}PR_curve.png', names)              #? PR @0.5/cls
+        plot_mc_curve(px, f1, Path(save_dir) / f'{prefix}F1_curve.png', names, ylabel='F1')     #? F1-CONF @0.5/cls
+        plot_mc_curve(px, p, Path(save_dir) / f'{prefix}P_curve.png', names, ylabel='Precision')#? p-conf @0.5/cls
+        plot_mc_curve(px, r, Path(save_dir) / f'{prefix}R_curve.png', names, ylabel='Recall')   #? r-conf @0.5/cls
 
     i = smooth(f1.mean(0), 0.1).argmax()  # max F1 index
     p, r, f1 = p[:, i], r[:, i], f1[:, i]

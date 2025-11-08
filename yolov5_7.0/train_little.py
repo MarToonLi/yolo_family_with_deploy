@@ -454,6 +454,10 @@ def check_os():
     else:
         return "其他操作系统"
 
+def check_lanyun_env():
+    # 检查 /root/lanyun-tmp/ 路径是否存在，以判断是否在蓝云环境中运行
+    lanyun_path = "/root/lanyun-tmp/"
+    return os.path.exists(lanyun_path)
 
 def parse_opt(known=False):
 
