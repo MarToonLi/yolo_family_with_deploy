@@ -175,11 +175,12 @@ def profile(input, ops, n=10, device=None):
                 flops = 0
 
             try:
+                #? 有意思，会迭代十次
                 for _ in range(n):
                     t[0] = time_sync()
-                    y = m(x)
+                    y = m(x)   # forward
                     t[1] = time_sync()
-                    try:
+                    try:  #? 尝试反向传播， 如果模型没有backward方法，会抛出异常
                         _ = (sum(yi.sum() for yi in y) if isinstance(y, list) else y).sum().backward()
                         t[2] = time_sync()
                     except Exception:  # no backward method

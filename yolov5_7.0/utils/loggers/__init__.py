@@ -56,6 +56,7 @@ except (ModuleNotFoundError, ImportError, AssertionError):
     comet_ml = None
 
 
+#? callback对象中需要注册的函数是融合在Loggers类中的
 class Loggers():
     # YOLOv5 Loggers class
     def __init__(self, save_dir=None, weights=None, opt=None, hyp=None, logger=None, include=LOGGERS):
@@ -81,7 +82,7 @@ class Loggers():
             'x/lr1',
             'x/lr2']  # params
         self.best_keys = ['best/epoch', 'best/precision', 'best/recall', 'best/mAP_0.5', 'best/mAP_0.5:0.95']
-        for k in LOGGERS:
+        for k in LOGGERS:  
             setattr(self, k, None)  # init empty logger dictionary
         self.csv = True  # always log to csv
 

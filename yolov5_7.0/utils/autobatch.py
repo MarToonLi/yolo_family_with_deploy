@@ -29,6 +29,8 @@ def autobatch(model, imgsz=640, fraction=0.8, batch_size=16):
     # Check device
     prefix = colorstr('AutoBatch: ')
     LOGGER.info(f'{prefix}Computing optimal batch size for --imgsz {imgsz}')
+    #? 有意思的是，检测模型的设备是根据模型的第一个tensor参数的设备信息来判断的，而且device是一个对象，包含了设备的类型和索引！
+    #? model.parameters() 是一个生成器，返回模型的所有参数，包括权重和偏置项！
     device = next(model.parameters()).device  # get model device
     if device.type == 'cpu':
         LOGGER.info(f'{prefix}CUDA not detected, using default CPU batch-size {batch_size}')
@@ -38,11 +40,12 @@ def autobatch(model, imgsz=640, fraction=0.8, batch_size=16):
         return batch_size
 
     # Inspect CUDA memory
-    gb = 1 << 30  # bytes to GiB (1024 ** 3)
-    d = str(device).upper()  # 'CUDA:0'
+    gb = 1 << 30             # bytes to GiB (1024 ** 3)  #? 位运算表达式，数字1左移30位，相当于乘以2的30次方，即1024的3次方，即1GB
+    d = str(device).upper()  # 'CUDA:0' 获取的是device对象的type属性值和index属性值的组合，例如'CUDA:0'
+    #? 虽然device不包含显卡的信息，但是可以根据device索引调用CUDAAPI来获取显卡的信息
     properties = torch.cuda.get_device_properties(device)  # device properties
-    t = properties.total_memory / gb  # GiB total
-    r = torch.cuda.memory_reserved(device) / gb  # GiB reserved
+    t = properties.total_memory / gb              # GiB total
+    r = torch.cuda.memory_reserved(device) / gb   # GiB reserved
     a = torch.cuda.memory_allocated(device) / gb  # GiB allocated
     f = t - (r + a)  # GiB free
     LOGGER.info(f'{prefix}{d} ({properties.name}) {t:.2f}G total, {r:.2f}G reserved, {a:.2f}G allocated, {f:.2f}G free')

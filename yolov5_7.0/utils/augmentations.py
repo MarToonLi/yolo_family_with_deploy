@@ -355,6 +355,7 @@ def classify_transforms(size=224):
 class LetterBox:
     # YOLOv5 LetterBox class for image preprocessing, i.e. T.Compose([LetterBox(size), ToTensor()])
     def __init__(self, size=(640, 640), auto=False, stride=32):
+        # 是否自动调整尺寸以适应步长约束；
         super().__init__()
         self.h, self.w = (size, size) if isinstance(size, int) else size
         self.auto = auto  # pass max size integer, automatically solve for short side using stride
@@ -362,11 +363,19 @@ class LetterBox:
 
     def __call__(self, im):  # im = np.array HWC
         imh, imw = im.shape[:2]
-        r = min(self.h / imh, self.w / imw)  # ratio of new/old
-        h, w = round(imh * r), round(imw * r)  # resized image
+        r = min(self.h / imh, self.w / imw)  # ratio of new/old   #? 使用最小比例保证图像完全适应目标尺寸，避免图像变形
+       
+        #? （第一次确定）计算等比例缩放后的图像尺寸
+        h, w = round(imh * r), round(imw * r)  # resized image  
+
+        #? (第二次确定) 根据auto标志决定最终填充后的尺寸
         hs, ws = (math.ceil(x / self.stride) * self.stride for x in (h, w)) if self.auto else self.h, self.w
+        
+        #? 计算填充量，确保图像居中填充
         top, left = round((hs - h) / 2 - 0.1), round((ws - w) / 2 - 0.1)
-        im_out = np.full((self.h, self.w, 3), 114, dtype=im.dtype)
+        im_out = np.full((self.h, self.w, 3), 114, dtype=im.dtype)  #? 创建一个填充后的空白输出图像
+
+        #? 将缩放后的图像放置在输出图像的中心位置
         im_out[top:top + h, left:left + w] = cv2.resize(im, (w, h), interpolation=cv2.INTER_LINEAR)
         return im_out
 

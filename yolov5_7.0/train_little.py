@@ -90,12 +90,13 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
     # Loggers
     data_dict = None
-    if RANK in {-1, 0}:                                                             # todo:  RANK 如果等于0或者-1代表什么
+    if RANK in {-1, 0}:                                                             # todo
         loggers = Loggers(save_dir, weights, opt, hyp, LOGGER)  # loggers instance
 
         # Register actions
         for k in methods(loggers):
-            callbacks.register_action(k, callback=getattr(loggers, k))
+            #? getattr 是获取一个对象的属性值或者方法！包括方法
+            callbacks.register_action(k, callback=getattr(loggers, k))  #? callback对象中的钩子容器中添加的loggers对象中的方法
 
         # Process custom dataset artifact link
         data_dict = loggers.remote_dataset
@@ -492,7 +493,7 @@ def parse_opt(known=False):
     parser.add_argument('--data',            type=str, default=data,             help='dataset.yaml path')
     parser.add_argument('--hyp',             type=str, default=hyp ,             help='训练超参数配置文件路径')
     parser.add_argument('--epochs',          type=int, default=5,                                     help='total training epochs')  
-    parser.add_argument('--batch-size',      type=int, default=4,                                       help='total batch size for all GPUs, -1 for autobatch')
+    parser.add_argument('--batch-size',      type=int, default=-1,                                       help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640,                       help='train, val image size (pixels)')
     parser.add_argument('--optimizer',       type=str, choices=['SGD', 'Adam', 'AdamW'], default='Adam', help='optimizer')
     parser.add_argument('--cos-lr',          action='store_true',                                       help='cosine LR scheduler')

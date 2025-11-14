@@ -46,6 +46,8 @@ from utils.autobatch import check_train_batch_size
 from utils.callbacks import Callbacks
 from utils.dataloaders import create_dataloader
 from utils.downloads import attempt_download, is_url
+
+#? 在general中实例化Loggers类
 from utils.general import (LOGGER, TQDM_BAR_FORMAT, check_amp, check_dataset, check_file, check_git_info,
                            check_git_status, check_img_size, check_requirements, check_suffix, check_yaml, colorstr,
                            get_latest_run, increment_path, init_seeds, intersect_dicts, labels_to_class_weights,
@@ -106,11 +108,13 @@ def ray_train(config, default_config, opt, device, callbacks):  # hyp is path/to
 
     # Loggers
     data_dict = None
-    if RANK in {-1, 0}:                                                             # todo:  RANK 如果等于0或者-1代表什么
+    if RANK in {-1, 0}:                                                             
+        # RANK 如果等于0或者-1代表什么：非分布式训练中的进程ID或者分布式训练中的第一进程ID
         loggers = Loggers(save_dir, weights, opt, hyp, LOGGER)  # loggers instance
 
         # Register actions
         for k in methods(loggers):
+            #? 要求loggers中的方法，其名称必须是loggers对象中的属性！
             callbacks.register_action(k, callback=getattr(loggers, k))
 
         # Process custom dataset artifact link
@@ -675,7 +679,12 @@ def ray_main(opt, callbacks=Callbacks()):
             grace_period = 2
 
         #! Ray Tune 相关参数 ----------------------------------------------------------------------------------------------------------
-
+        os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+        os.environ['RAY_USE_MULTIPROCESSING_CPU_COUNT'] = '1'
+        
+        
+        
+        ray.init()
 
         # 检查路径是否存在，不存在则创建
         save_dir = Path(opt.save_dir)

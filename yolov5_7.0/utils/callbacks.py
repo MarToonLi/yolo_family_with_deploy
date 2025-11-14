@@ -70,7 +70,7 @@ class Callbacks:
 
         assert hook in self._callbacks, f"hook '{hook}' not found in callbacks {self._callbacks}"
         for logger in self._callbacks[hook]:
-            if thread:
+            if thread:  #? 是否在守护线程中运行回调函数：守护线程意味着当主线程结束时，回调线程也会被强制结束！
                 threading.Thread(target=logger['callback'], args=args, kwargs=kwargs, daemon=True).start()
             else:
-                logger['callback'](*args, **kwargs)
+                logger['callback'](*args, **kwargs)  #? 同步执行
