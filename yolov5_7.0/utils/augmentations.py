@@ -241,36 +241,38 @@ def random_perspective(im,
 def copy_paste(im, labels, segments, p=0.5):
     # Implement Copy-Paste augmentation https://arxiv.org/abs/2012.07177, labels as nx5 np.array(cls, xyxy)
     n = len(segments)
-    if p and n:
+    if p and n: #? 如果不是分割任务是不可以用的
         h, w, c = im.shape  # height, width, channels
         im_new = np.zeros(im.shape, np.uint8)
-        for j in random.sample(range(n), k=round(p * n)):
+        for j in random.sample(range(n), k=round(p * n)):  #? 根据概率p随机选择一部分目标进行复制粘贴
             l, s = labels[j], segments[j]
-            box = w - l[3], l[2], w - l[1], l[4]
-            ioa = bbox_ioa(box, labels[:, 1:5])  # intersection over area
+            box = w - l[3], l[2], w - l[1], l[4]           #? 计算目标在图像水平镜像后的位置(x坐标的反转)
+            ioa = bbox_ioa(box, labels[:, 1:5])   # intersection over area
             if (ioa < 0.30).all():  # allow 30% obscuration of existing labels
                 labels = np.concatenate((labels, [[l[0], *box]]), 0)
                 segments.append(np.concatenate((w - s[:, 0:1], s[:, 1:2]), 1))
+                #? 将被采样的目标的分割区域绘制到遮罩上，并没有进行水平翻转
                 cv2.drawContours(im_new, [segments[j].astype(np.int32)], -1, (1, 1, 1), cv2.FILLED)
 
-        result = cv2.flip(im, 1)  # augment segments (flip left-right)
-        i = cv2.flip(im_new, 1).astype(bool)
-        im[i] = result[i]  # cv2.imwrite('debug.jpg', im)  # debug
+        result = cv2.flip(im, 1)  # augment segments (flip left-right)  #? 这里将原始的分割区域全部转换为水平镜像后的位置
+        i = cv2.flip(im_new, 1).astype(bool)                            #? i将增加的分割区域水平翻转，并构建为遮罩
+        im[i] = result[i]  # cv2.imwrite('debug.jpg', im)  # debug      #? 实现将增加的分割区域通过水平翻转的方式添加到原始图像中
 
     return im, labels, segments
 
-
+#? 是一种通过在图像上随机生成多个色块来遮挡部分内容的方法，提高模型鲁棒性。
 def cutout(im, labels, p=0.5):
     # Applies image cutout augmentation https://arxiv.org/abs/1708.04552
     if random.random() < p:
         h, w = im.shape[:2]
+        #? 创建不同比例的遮挡区域尺寸分布，从大到小，且小尺寸的比例更多
         scales = [0.5] * 1 + [0.25] * 2 + [0.125] * 4 + [0.0625] * 8 + [0.03125] * 16  # image size fraction
         for s in scales:
             mask_h = random.randint(1, int(h * s))  # create random masks
             mask_w = random.randint(1, int(w * s))
 
             # box
-            xmin = max(0, random.randint(0, w) - mask_w // 2)
+            xmin = max(0, random.randint(0, w) - mask_w // 2)  #? 位置是随便选择的
             ymin = max(0, random.randint(0, h) - mask_h // 2)
             xmax = min(w, xmin + mask_w)
             ymax = min(h, ymin + mask_h)
@@ -283,10 +285,11 @@ def cutout(im, labels, p=0.5):
                 box = np.array([xmin, ymin, xmax, ymax], dtype=np.float32)
                 ioa = bbox_ioa(box, xywhn2xyxy(labels[:, 1:5], w, h))  # intersection over area
                 labels = labels[ioa < 0.60]  # remove >60% obscured labels
+                #todo: 但是如果每一个遮挡色块遮挡率都不足60%，但是总的遮挡率超过了60%，那应该去除该标签，但这里没有这种判断。
 
     return labels
 
-
+#? 所谓mixup就是通过线性混合两张图像以及其标签来创建新训练样本的数据增强方法，提高泛化能力，减少过拟合。
 def mixup(im, labels, im2, labels2):
     # Applies MixUp augmentation https://arxiv.org/pdf/1710.09412.pdf
     r = np.random.beta(32.0, 32.0)  # mixup ratio, alpha=beta=32.0
@@ -300,6 +303,7 @@ def box_candidates(box1, box2, wh_thr=2, ar_thr=100, area_thr=0.1, eps=1e-16):  
     w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
     w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
     ar = np.maximum(w2 / (h2 + eps), h2 / (w2 + eps))  # aspect ratio
+    #? 评估box2是否是一个有效的候选框，要求：1. 宽度和高度都要大于wh_thr 2. 面积之比要大于area_thr 3. 宽高比要小于ar_thr
     return (w2 > wh_thr) & (h2 > wh_thr) & (w2 * h2 / (w1 * h1 + eps) > area_thr) & (ar < ar_thr)  # candidates
 
 
