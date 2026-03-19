@@ -1,16 +1,19 @@
 
 from ultralytics import YOLO
+import os
 
 if __name__ == '__main__':
-    model_path = r"F:\Projects\yolo_family\runs\train\exp\weights\best.pt"
-    data_path = r"F:\Projects\yolo_family\yolov5_7.0\data\cable\apple_3_7_val.yaml"
+    root_path = r'D:\ProjectsRelated\CoreProjects\yolo_family_with_deploy'
+    
+    model_path = r"D:\ProjectsRelated\CoreProjects\yolo_family_with_deploy\runs\detect\train10\weights\best.pt"
+    data_yaml_path = os.path.join(root_path, r'yolov5_7.0/data/trans/train_det.yaml')
     
     
     # Load a model
     model = YOLO(model_path, verbose=True)  # load a custom model
 
     # Validate the model
-    metrics = model.val(data=data_path, 
+    metrics = model.val(data=data_yaml_path, 
                         # save_txt = True, # 保存每个样本预测结果的txt文件
                         save_json = True,  # 保存每个样本预测结果到一个json文件，元素是以预测框为单位，而不是样本。
                         imgsz=640, 

@@ -119,12 +119,12 @@ settings["tensorboard"]=True
 
 
 if __name__ == '__main__':
-    # D:\ProjectsRelated\CoreProjects\yolo_family_with_deploy\yolov5_7.0\data\trans\train_det.yaml
+    # D:\ProjectsRelated\CoreProjects\yolo_family_with_deploy\yolov5_7.0\data\trans\train_c2_det.yaml
 
     root_path = r'D:\ProjectsRelated\CoreProjects\yolo_family_with_deploy'
     model_yaml_path = os.path.join(root_path, r'yolov11/ultralyticsx/cfg/models/11/yolo11s.yaml')
     pretrained_weights_path = os.path.join(root_path, r'resources/models/yolov11/yolo11s.pt')
-    data_yaml_path = os.path.join(root_path, r'yolov5_7.0/data/trans/train_det.yaml')
+    data_yaml_path = os.path.join(root_path, r'yolov5_7.0/data/trans/train_c2_det.yaml')
 
     model = YOLO(model_yaml_path)
     # /ns_data/projets/yolo_family_with_deploy/yolov11/ultralyticsx/cfg/models/11/yolo11s.yaml
